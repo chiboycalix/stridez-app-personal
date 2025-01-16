@@ -1,0 +1,32 @@
+/* .courses-list ul {
+    list-style: none;
+    padding: 0;
+    gap: 5px;
+  } */
+  
+  /* .courses-list li {
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    
+  } */
+  
+  .courses-list li.selected {
+    background-color: #f0f8ff;
+  }
+  
+  /* .course-info {
+    margin-left: 15px;
+  } */
+  
+  /* .course-info h4 {
+    margin: 0 0 5px;
+  } */
+/*   
+  .course-info p {
+    margin: 0;
+  } */
+  

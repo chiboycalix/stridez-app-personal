@@ -1,0 +1,38 @@
+.icon-menu-list {
+    font-family: 'Manrope', sans-serif;
+    /* font-size: */
+}
+
+.nav-search-input {
+    border: 1px solid black;
+    background-color: #f5f5f5;
+    border-right: none;
+    border-radius: 5px 0 0 5px;
+    padding-left: 5px;
+    transition: border-color 0.3s ease, background-color 0.3s ease, transform 0.3s ease;
+}
+
+.nav-search-input:focus {
+    border-color: #3498db; /* Change border color when focused */
+    background-color: #e0f7fa; /* Light blue background when focused */
+    transform: scale(1.02); /* Slightly enlarge on focus */
+}
+
+.nav-search-button {
+    border: 1px solid black;
+    background-color: #f5f5f5;
+    color: black;
+    border-left: none;
+    border-radius: 0 5px 5px 0;
+    transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
+}
+
+.nav-search-button:hover {
+    background-color: #58dbe7; /* Blue background on hover */
+    color: white; /* White text on hover */
+    transform: scale(1.05); /* Slightly enlarge on hover */
+}
+
+.nav-search-button:active {
+    transform: scale(0.98); /* Slightly shrink on click */
+}

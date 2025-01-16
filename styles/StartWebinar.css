@@ -1,0 +1,214 @@
+  /* Container for the top bar */
+  .eye {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    background-color: #ffffff;
+  }
+  
+  .eye img {
+    height: 40px;
+  }
+  
+  .nigga {
+    flex: 1;
+    margin: 0 10px;
+  }
+  
+  .nigga .inside {
+    width: 399px;
+    display: flex;
+    height: 46px;
+    padding: 16px 12px;
+    justify-content: space-between;
+    align-items: center;
+    align-self: stretch;
+    margin-left:80px;
+    
+    border-radius: var(--radi-lg, 12px);
+    border: 1px solid var(--[#37169C]-green-400-d-9-ecf-2, #F8FEFF);
+    background: var(--[#37169C]-[#37169C]-light, #F8F8FC);
+  }
+  .noti{
+    width:20.52px;
+    height:20.52px;
+    margin-right: 10px;
+  }
+  .las{
+    width:32.83px;
+    height:32.83px;
+  }
+  /* Sidebar */
+  .pac {
+    display: flex;
+    height: calc(100vh - 60px);  /* Adjust according to your header height */
+  }
+  
+  .ijebu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 300px;
+    height:600px;
+    padding: 10px;
+  
+    background-color: #ffffff;
+  }
+  
+  .ijebu img {
+    margin: 10px 0;
+    cursor: pointer;
+  }
+  
+  .webinar-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+  }
+  
+  /* Main content area */
+  .webinar-content {
+    display: flex;
+    flex: 1;
+    justify-content: space-between;
+  }
+  
+  .video-chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .video {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #000;
+    color: #fff;
+    border: 1px solid #ddd;
+    margin-bottom: 10px;
+  }
+  
+  /* Chat styles */
+  .chat {
+    border: 1px solid #ddd;
+    padding: 10px;
+    max-width: 300px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .chat-messages {
+    flex: 1;
+    max-height: 200px;
+    overflow-y: auto;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 10px;
+  }
+  
+  .chat-message {
+    margin-bottom: 5px;
+  }
+  
+  .chat-input-container {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .chat-textarea {
+    resize: none;
+    margin-bottom: 5px;
+    padding: 5px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    color: blue; /* Blue text */
+    background-color: white; /* White background */
+  }
+  
+  .chat-buttons {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .emoji-picker {
+    display: flex;
+    flex-wrap: wrap;
+    max-width: 200px;
+    border: 1px solid #ddd;
+    padding: 5px;
+  }
+  
+  .emoji-picker span {
+    cursor: pointer;
+    margin: 5px;
+  }
+  
+  /* Webinar control buttons */
+  .webinar-controls {
+    display: flex;
+    justify-content: space-around;
+    padding: 10px;
+    
+  }
+  
+  .webinar-button {
+    padding: 5px 10px;
+    margin: 5px;
+    cursor: pointer;
+    
+    border-radius: 5px;
+    background-color: #fff;
+    transition: background-color 0.3s;
+  
+  }
+  
+  .webinar-button:hover {
+    background-color: #e0e0e0;
+  }
+.camera{
+  width:90px;
+  height:48px;
+}
+.audio{
+  width:90px;
+  height:48px;
+}
+.white{
+  width:48px;
+  height:48px;
+}
+.adjust{
+  width: 88px;
+  height: 48px;
+}
+  
+  /* Whiteboard styles */
+  .whiteboard {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .whiteboard-canvas {
+    border: 1px solid #ddd;
+    background-color: white;
+    cursor: crosshair;
+  }
+  
+  .whiteboard-controls {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 10px;
+  }
+  
+  .eraser-cursor {
+    cursor: url('../assets/eraser.png'), auto; /* Replace with actual eraser cursor URL */
+  }
+  
+  .pen-cursor {
+    cursor: url('../assets/pen.png'), auto; /* Replace with actual pen cursor URL */
+  }  

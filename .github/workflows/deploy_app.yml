@@ -1,0 +1,136 @@
+name: Build and Deploy Web Frontend to Kubernetes
+
+on:
+  push:
+    branches:
+      - dev
+
+env:
+  IMAGE_NAME: nextjs-frontend-dev
+  DEPLOYMENT_NAMESPACE: frontend-app
+
+jobs:
+  build:
+    runs-on: arc-custom-runners-1  
+    environment: DEV
+    outputs:
+      new_tag: ${{ steps.increment-version.outputs.new_tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Azure CLI
+        run: |
+          if ! command -v az &> /dev/null; then
+            curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          fi
+      
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Log into Azure Container Registry
+        run: az acr login --name ${{ secrets.AZURE_ACR_NAME }}
+
+      - name: Install jq
+        run: sudo apt-get install jq -y
+
+      - name: Get Latest Tag from ACR
+        id: get-latest-tag
+        run: |
+          tags=$(az acr repository show-tags --name ${{ secrets.AZURE_ACR_NAME }} --repository ${{ env.IMAGE_NAME }} --output json)
+          echo "Tags: $tags"
+          latest_tag=$(echo "$tags" | jq -r 'map(select(test("^v[0-9]+\\.[0-9]+$") or test("^[0-9]+$"))) | sort_by(.) | last')
+          echo "LATEST_TAG=$latest_tag" >> $GITHUB_ENV
+
+      - name: Show Latest Tag
+        run: echo "Latest Tag is ${{ env.LATEST_TAG }}"
+
+      - name: Delete Previous Images Except the Last Two
+        run: |
+          tags=$(az acr repository show-tags --name ${{ secrets.AZURE_ACR_NAME }} --repository ${{ env.IMAGE_NAME }} --output json | jq -r 'map(select(test("^v[0-9]+\\.[0-9]+$") or test("^[0-9]+$"))) | sort_by(.) | reverse | .[2:]')
+          echo "Tags to delete: $tags"
+          if [ -z "$tags" ]; then
+            echo "No tags to delete."
+          else
+            for tag in $(echo "$tags" | jq -r '.[]'); do
+              echo "Deleting tag: $tag"
+              az acr repository delete --name ${{ secrets.AZURE_ACR_NAME }} --image ${{ env.IMAGE_NAME }}:$tag --yes
+            done
+          fi
+
+      - name: Increment Version
+        id: increment-version
+        run: |
+          if [ -z "${{ env.LATEST_TAG }}" ]; then
+            NEW_TAG="v1.0"
+          else
+            MAJOR=$(echo ${{ env.LATEST_TAG }} | cut -d. -f1 | cut -dv -f2)
+            MINOR=$(echo ${{ env.LATEST_TAG }} | cut -d. -f2)
+
+            if [ "$MINOR" -eq 9 ]; then
+              MAJOR=$((MAJOR + 1))
+              MINOR=0 
+            else
+              MINOR=$((MINOR + 1))
+            fi  
+            NEW_TAG="v$MAJOR.$MINOR"
+          fi
+          echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - uses: azure/docker-login@v2
+        with:
+          login-server: ${{ secrets.AZURE_ACR_NAME }}.azurecr.io
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      
+      - run: |
+          cat $DOCKER_CONFIG/config.json
+          docker build . -t ${{ secrets.AZURE_ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ env.NEW_TAG }}
+          docker push ${{ secrets.AZURE_ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ env.NEW_TAG }}
+  
+  deploy:
+    runs-on: arc-custom-runners-1
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install SSH Client
+        run: sudo apt-get install openssh-client -y
+
+      - name: Install Azure CLI
+        run: |
+          if ! command -v az &> /dev/null; then
+            curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          fi
+
+      - name: Azure login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: SSH into VM and Deploy to Kubernetes
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USERNAME }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+              echo "Deploying to Kubernetes on VM..."
+              sudo az login --identity
+              sudo az acr login --name ${{ secrets.AZURE_ACR_NAME }}
+              echo "ACR login successful!!!"
+              tags=$(az acr repository show-tags --name ${{ secrets.AZURE_ACR_NAME }} --repository ${{ env.IMAGE_NAME }} --output json)
+        
+              # Extract the latest tag using jq
+              latest_tag=$(echo "$tags" | jq -r 'map(select(test("^v[0-9]+\\.[0-9]+$") or test("^[0-9]+$"))) | sort_by(.) | last')
+        
+              # Output the latest tag
+              echo "Deploying image with tag $latest_tag"
+        
+              # Update Kubernetes deployment with the new image
+              kubectl set image deployment/frontend-web-app frontend-web-app=${{ secrets.AZURE_ACR_NAME }}/${{ env.IMAGE_NAME }}:${{ needs.build-and-deploy.outputs.new_tag }} -n ${{ env.DEPLOYMENT_NAMESPACE }}
+              kubectl rollout status deployment/frontend-web-app --timeout=180s -n ${{ env.DEPLOYMENT_NAMESPACE }}

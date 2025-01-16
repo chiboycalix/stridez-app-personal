@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000" # Map container's port 3000 to host's port 3000
+    environment:
+      NODE_ENV: development
+      HOSTNAME: "0.0.0.0"
+      PORT: 3000
+    volumes:
+      - .:/app # Mount the current directory to the container's /app
+      - /app/node_modules # Ignore node_modules on the host
+    command: npm run dev # Run the development server

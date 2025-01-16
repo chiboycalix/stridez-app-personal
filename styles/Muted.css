@@ -1,0 +1,32 @@
+.Ore{
+    border-radius: var(--Radius-1, 8px);
+    background: var(--Monochrome-Grey-100, #F5F5F5);
+    width: 355px;
+    height: 48px;
+  
+  
+  
+    display: flex;
+    
+    padding: var(--Spacing-3, 12px) var(--Spacing-4, 16px);
+    align-items: center;
+    gap: var(--Spacing-4, 16px);
+    align-self: stretch;
+  
+  }
+  
+  
+  /* .Aisha {
+    display: flex;
+    height: 48px;
+    padding: var(--Spacing-2, 16px) var(--Spacing-4, 16px);
+    justify-content: center;
+    align-items: center;
+    border-radius: var(--Radius-1, 8px);
+    background: var(--[#37169C]-[#37169C]-500, #37169C);
+  } */
+  
+  .recite{
+    margin-left: 200px;
+  }
+  

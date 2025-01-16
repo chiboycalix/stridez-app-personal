@@ -1,0 +1,6 @@
+
+.details-container{
+  background: #FAFAFA;
+  display: flex;
+  gap: 30px;
+}

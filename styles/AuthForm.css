@@ -1,0 +1,159 @@
+.auth-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.header-image {
+  width: 300px;
+  height: auto;
+}
+
+.explore-auth {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.explore-button {
+  background-color: #37169c;
+  color: white;
+  border: none;
+  padding: 8px 0px;
+  cursor: pointer;
+  border-radius: 12px;
+  font-size: 16px;
+}
+
+.button-container {
+  display: flex;
+  gap: 7px;
+  justify-content: space-between;
+}
+
+.auth-button {
+  width: 180px;
+  height: 40px;
+  padding: 5px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.auth-button:hover,
+.auth-button.active {
+  background-color: #d5d4ff;
+  border: none;
+}
+
+.button-toggle-container {
+  display: flex;
+  align-items: center;
+}
+
+.social-buttons-container {
+  display: flex;
+  flex-direction: column;
+  /* justify-content: space-evenly; */
+}
+
+.social-button {
+  border: none;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.same {
+  color: var(--[#37169C]-green-100002-d-40, #002d40);
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+.input-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 10px;
+  top: 12px;
+  color: #aaa;
+}
+
+input[type="email"],
+input[type="password"],
+input[type="text"] {
+  flex: 1;
+  padding: 10px;
+  border: 1px #f8f8fc;
+  border-radius: 12px;
+  padding-left: 30px;
+  background-color: #f8f8fc;
+}
+
+.toggle-icon {
+  position: absolute;
+  right: 10px;
+  cursor: pointer;
+}
+
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  width: 370px;
+  margin-bottom: 20px;
+}
+
+.forgot-password-link {
+  text-decoration: none;
+  margin-left: auto;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 20px;
+  color: #37169c;
+}
+
+.forgot-password-link:hover {
+  text-decoration: underline;
+}
+
+.remember-password-container {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+}
+
+.checkbox.checked {
+  background-color: #37169c;
+  color: white;
+}
+
+.all {
+  width: 352px;
+  margin-top: 20px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  text-align: center;
+  color: #454545;
+}

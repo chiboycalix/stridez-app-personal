@@ -1,0 +1,58 @@
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.input-no-spinner::-webkit-outer-spin-button,
+.input-no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.overflow-auto::-webkit-scrollbar {
+  width: 6px; /* Set the width of the scrollbar */
+}
+
+.overflow-auto::-webkit-scrollbar-track {
+  background: #f1f1f1; /* Set the background of the scrollbar track */
+}
+
+.overflow-auto::-webkit-scrollbar-thumb {
+  background: #888; /* Set the color of the scrollbar thumb */
+  border-radius: 10px; /* Optional: make the scrollbar thumb rounded */
+}
+
+.overflow-auto::-webkit-scrollbar-thumb:hover {
+  background: #555; /* Set the color of the scrollbar thumb when hovered */
+}
+
+.input-no-spinner {
+  -moz-appearance: textfield;
+}
+
+/* styles.css */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 20rem; /* Adjust the width as needed */
+  background-color: #1f2937; /* Tailwind CSS gray-800 */
+  color: #555;
+}
+
+.main-content {
+  margin-left: 20rem; /* Same width as the sidebar */
+}
+
+/* src/index.css or src/App.css */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+
+body {
+  font-family: "Poppins", sans-serif;
+  /* background-color:  #f3f2f2; */
+}
