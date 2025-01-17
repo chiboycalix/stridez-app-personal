@@ -28,7 +28,7 @@ const MeetingHistory: React.FC<MeetingHistoryProps> = ({ meetings }) => {
       roomCode: string;
       startTime: string;
       endTime: string;
-      roomSubscribers: { userId: string; username: string; isOwner: boolean }[];
+      roomSubscribers: { userId: string; username: string; isOwner: boolean; isCoHost: boolean }[];
     };
   }
 
@@ -149,6 +149,12 @@ const MeetingHistory: React.FC<MeetingHistoryProps> = ({ meetings }) => {
                           Host:{" "}
                           <span className="font-semibold text-gray-900">
                             {analyticsData?.room?.roomSubscribers?.find((user) => user.isOwner)?.username || "You were a guest"}
+                          </span>
+                        </p>
+                        <p className="text-sm font-medium text-gray-700">
+                          Co-Host:{" "}
+                          <span className="font-semibold text-gray-900">
+                            {analyticsData?.room?.roomSubscribers?.find((user) => user.isCoHost)?.username || "No co-host"}
                           </span>
                         </p>
                         <p className="text-sm font-medium text-gray-700">
