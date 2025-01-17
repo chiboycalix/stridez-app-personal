@@ -102,50 +102,24 @@ export function RegularGrid({ participants }: any) {
     );
   }
 
-  if (count === 3) {
-    return (
-      <div className="h-full w-full flex items-center justify-center p-2 sm:p-4">
-        <div className="flex flex-col gap-2 sm:gap-4 w-full">
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-            {participants.slice(0, 2).map((participant: any) => (
-              <div key={participant.uid} className="w-full sm:w-1/2 h-[200px] sm:h-[300px] md:h-[350px]">
-                <ParticipantVideo participant={participant} />
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-center">
-            <div className="w-full sm:w-1/2 h-[200px] sm:h-[300px] md:h-[350px]">
-              <ParticipantVideo participant={participants[2]} />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (count === 4) {
-    return (
-      <div className="h-full w-full flex items-center justify-center p-2 sm:p-4">
-        <div className="flex flex-col gap-2 sm:gap-4 w-full">
-          {[0, 2].map((startIndex) => (
-            <div key={startIndex} className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-              {participants.slice(startIndex, startIndex + 2).map((participant: any) => (
-                <div key={participant.uid} className="w-full sm:w-1/2 h-[200px] sm:h-[250px] md:h-[300px]">
-                  <ParticipantVideo participant={participant} />
-                </div>
-              ))}
+  // For 3 or more participants
+  return (
+    <div className="h-full w-full p-2 sm:p-4">
+      {/* Mobile Layout (Vertical Scroll) */}
+      <div className="sm:hidden h-full overflow-y-auto">
+        <div className="flex flex-col gap-2">
+          {participants.map((participant: any) => (
+            <div key={participant.uid} className="w-full h-[250px] flex-shrink-0">
+              <ParticipantVideo participant={participant} />
             </div>
           ))}
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="h-full w-full p-2 sm:p-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
+      {/* Tablet/Desktop Layout (Grid) */}
+      <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-fr">
         {participants.map((participant: any) => (
-          <div key={participant.uid} className="h-[200px] sm:h-[250px] md:h-[300px]">
+          <div key={participant.uid} className="h-[250px] md:h-[300px]">
             <ParticipantVideo participant={participant} />
           </div>
         ))}
@@ -153,6 +127,8 @@ export function RegularGrid({ participants }: any) {
     </div>
   );
 }
+
+
 
 export function ScreenShareView({ remoteParticipants }: any) {
   const { screenTrack, screenSharingUser } = useVideoConferencing();
@@ -229,7 +205,6 @@ export function VideoGrid({
 
     const validRemoteParticipants = Object.entries(remoteParticipants || {})
       .map(([uid, user]: any) => {
-        // Ensure we're not including the local user in remote participants
         if (uid === String(meetingConfig?.uid)) {
           console.log('[VIDEO-GRID] Skipping local user from remote participants:', uid);
           return null;
@@ -239,24 +214,15 @@ export function VideoGrid({
           (subscriber: any) => subscriber.isOwner && subscriber.user?.id === user.uid
         );
 
-        console.log('[VIDEO-GRID] Processing remote participant:', {
-          uid,
-          hasVideoTrack: !!user.videoTrack,
-          hasAudioTrack: !!user.audioTrack,
-          videoEnabled: user.videoEnabled,
-          audioEnabled: user.audioEnabled
-        });
-
         return {
           ...user,
           uid,
           isHost,
-          isLocal: false  // Explicitly mark as remote
+          isLocal: false
         };
       })
-      .filter(Boolean); // Remove null entries
+      .filter(Boolean);
 
-    // Prepare local user with correct properties
     const preparedLocalUser = {
       ...localUser,
       uid: meetingConfig?.uid,
@@ -266,16 +232,9 @@ export function VideoGrid({
       audioEnabled: localUser.audioEnabled ?? true
     };
 
-    console.log('[VIDEO-GRID] Final participants:', {
-      localUser: preparedLocalUser,
-      remoteCount: validRemoteParticipants.length
-    });
-
     return {
-      participants: [
-        preparedLocalUser,
-        ...validRemoteParticipants
-      ].filter(p => p !== null && p !== undefined)
+      participants: [preparedLocalUser, ...validRemoteParticipants]
+        .filter(p => p !== null && p !== undefined)
     };
   }, [localUser, remoteParticipants, userIsHost, meetingRoomData, meetingConfig?.uid]);
 
