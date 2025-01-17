@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { MoreVertical } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type IconButtonProps = {
   leftIcon: React.ReactNode;
@@ -26,68 +32,64 @@ const IconButton = ({
   tooltip,
   rightTooltip
 }: IconButtonProps) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const [isRightHovered, setIsRightHovered] = useState(false);
-
   return (
     <div
       className={cn(
-        "flex items-center rounded-lg shadow-sm border border-gray-200 group transition-colors",
-        isHovered || isRightHovered ? "bg-black" : "bg-white",
+        "flex items-center rounded-lg shadow-sm border border-gray-700 group transition-colors hover:bg-black",
         className
       )}
     >
-      <div className="relative">
-        {tooltip && isHovered && (
-          <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-2 rounded whitespace-nowrap">
-            {tooltip}
-            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45" />
-          </div>
-        )}
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={onLeftClick}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          className={cn(
-            "p-2 rounded-lg transition-colors",
-            isHovered || isRightHovered ? "text-white hover:bg-gray-800" : "text-black hover:bg-gray-50",
-            iconClass
-          )}
-        >
-          {leftIcon}
-        </motion.button>
-      </div>
-
-      {showDivider && (
-        <>
-          <div className={cn(
-            "h-6 w-px transition-colors",
-            isHovered || isRightHovered ? "bg-gray-700" : "bg-gray-200"
-          )} />
-          <div className="relative">
-            {rightTooltip && isRightHovered && (
-              <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-2 rounded whitespace-nowrap">
-                {rightTooltip}
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45" />
-              </div>
-            )}
+      <TooltipProvider>
+        <Tooltip delayDuration={100}>
+          <TooltipTrigger asChild>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={onRightClick}
-              onMouseEnter={() => setIsRightHovered(true)}
-              onMouseLeave={() => setIsRightHovered(false)}
+              onClick={onLeftClick}
               className={cn(
-                "p-2 rounded-lg transition-colors",
-                isHovered || isRightHovered ? "text-white hover:bg-gray-800" : "text-black hover:bg-gray-50",
+                "p-2 rounded-lg transition-colors text-white",
+                "group-hover:text-white hover:bg-gray-800",
                 iconClass
               )}
             >
-              {rightIcon ? rightIcon : <MoreVertical size={20} />}
+              {leftIcon}
             </motion.button>
-          </div>
+          </TooltipTrigger>
+          {tooltip && (
+            <TooltipContent side="top" align="center">
+              <p>{tooltip}</p>
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </TooltipProvider>
+
+      {showDivider && (
+        <>
+          <div className="h-6 w-px bg-gray-200 group-hover:bg-gray-700" />
+
+          <TooltipProvider>
+            <Tooltip delayDuration={100}>
+              <TooltipTrigger asChild>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={onRightClick}
+                  className={cn(
+                    "p-2 rounded-lg transition-colors text-white",
+                    "group-hover:text-white hover:bg-gray-800",
+                    iconClass
+                  )}
+                >
+                  {rightIcon ? rightIcon : <MoreVertical size={20} />}
+                </motion.button>
+              </TooltipTrigger>
+              {rightTooltip && (
+                <TooltipContent side="top" align="center">
+                  <p>{rightTooltip}</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
         </>
       )}
     </div>

@@ -68,7 +68,7 @@ export default function SignInForm({
 
   return (
     <div className="space-y-6">
-      <Toastify message={alert} />
+      <Toastify message={alert} onClose={() => setAlert('')} />
       <div className="">
         <SocialButtons />
         <OrSeparator />

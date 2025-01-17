@@ -551,8 +551,22 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       try {
         const newState = !isMicrophoneEnabled;
 
-        // Only mute the local audio track
+        // First, enable/disable the local track
         await localUserTrack.audioTrack.setEnabled(newState);
+
+        // If we're in a call, handle publishing/unpublishing
+        if (hasJoinedMeeting && rtcClient) {
+          if (newState) {
+            // If enabling audio, publish the track if it's not already published
+            const isPublished = rtcClient.localTracks.includes(localUserTrack.audioTrack);
+            if (!isPublished) {
+              await rtcClient.publish([localUserTrack.audioTrack]);
+            }
+          } else {
+            // If disabling audio, unpublish the track
+            await rtcClient.unpublish([localUserTrack.audioTrack]);
+          }
+        }
 
         // Ensure remote audio keeps playing
         ensureRemoteAudioPlaying();
@@ -568,8 +582,14 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         }
 
         setIsMicrophoneEnabled(newState);
+
+        console.log('[TOGGLE-MICROPHONE] Audio state updated:', {
+          enabled: newState,
+          hasJoinedMeeting,
+          trackEnabled: localUserTrack.audioTrack.enabled
+        });
       } catch (error) {
-        console.log("Error toggling audio:", error);
+        console.error("Error toggling audio:", error);
       }
     }
   };
@@ -578,7 +598,23 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     try {
       if (localUserTrack?.videoTrack) {
         const newState = !isCameraEnabled;
+
+        // First, enable/disable the local track
         await localUserTrack.videoTrack.setEnabled(newState);
+
+        // If we're in a call, handle publishing/unpublishing
+        if (hasJoinedMeeting && rtcClient) {
+          if (newState) {
+            // If enabling video, publish the track if it's not already published
+            const isPublished = rtcClient.localTracks.includes(localUserTrack.videoTrack);
+            if (!isPublished) {
+              await rtcClient.publish([localUserTrack.videoTrack]);
+            }
+          } else {
+            // If disabling video, unpublish the track
+            await rtcClient.unpublish([localUserTrack.videoTrack]);
+          }
+        }
 
         if (rtmChannel) {
           await sendRateLimitedMessage({
@@ -593,9 +629,15 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         }
 
         setIsCameraEnabled(newState);
+
+        console.log('[TOGGLE-CAMERA] Video state updated:', {
+          enabled: newState,
+          hasJoinedMeeting,
+          trackEnabled: localUserTrack.videoTrack.enabled
+        });
       }
     } catch (error) {
-      console.log("Error toggling video:", error);
+      console.error("Error toggling video:", error);
     }
   };
 
@@ -834,67 +876,78 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     }
   };
 
+  // Fix for onMediaStreamPublished
   const onMediaStreamPublished = async (user: any, mediaType: "audio" | "video") => {
     try {
+      console.log(`[STREAM-PUBLISHED] User ${user.uid} published ${mediaType}`, {
+        hasVideo: user.hasVideo,
+        hasAudio: user.hasAudio,
+        videoTrack: !!user.videoTrack,
+        audioTrack: !!user.audioTrack
+      });
+
+      // Subscribe to the track first
       await rtcClient.subscribe(user, mediaType);
       const uid = String(user.uid);
 
-      if (user.videoTrack?.isScreenTrack) {
-        setRemoteParticipants((prevUsers) => ({
-          ...prevUsers,
-          [uid]: {
-            ...prevUsers[uid],
-            screenVideoTrack: user.videoTrack,
-            isScreenSharing: true
-          },
-        }));
+      if (mediaType === "video") {
+        // Ensure we're not dealing with a screen share track
+        if (!user.videoTrack?.isScreenTrack) {
+          setRemoteParticipants((prevUsers) => {
+            // Important: Preserve existing participant data
+            const existingUser = prevUsers[uid] || {
+              name: "",
+              rtcUid: uid,
+              audioEnabled: false,
+              videoEnabled: false
+            };
 
-        setIsSharingScreen(uid);
-        setScreenSharingUser({
-          uid: uid,
-          isLocal: false
-        });
+            const newState = {
+              ...prevUsers,
+              [uid]: {
+                ...existingUser,
+                videoTrack: user.videoTrack,
+                videoEnabled: true,
+                hasVideo: true
+              }
+            };
 
-        try {
-          user.videoTrack.play();
-        } catch (error) {
-          console.log("Error playing screen share track:", error);
-        }
-      } else {
-        // Handle regular video/audio tracks
-        if (mediaType === "video") {
-          setRemoteParticipants((prevUsers) => ({
-            ...prevUsers,
-            [uid]: {
-              ...prevUsers[uid],
-              videoTrack: user.videoTrack,
-              videoEnabled: true
-            },
-          }));
-        }
-
-        if (mediaType === "audio") {
-          const audioTrack = user.audioTrack;
-
-          setRemoteParticipants((prevUsers) => ({
-            ...prevUsers,
-            [uid]: {
-              ...prevUsers[uid],
-              audioTrack,
-              audioEnabled: true
-            },
-          }));
-
-          // Configure and play the audio track
-          audioTrack.setVolume(100);
-          await audioTrack.play();
-
-          // Ensure all remote audio is still playing
-          ensureRemoteAudioPlaying();
+            console.log('[VIDEO-STATE] Updated state for user', uid, newState[uid]);
+            return newState;
+          });
         }
       }
+
+      if (mediaType === "audio") {
+        const audioTrack = user.audioTrack;
+
+        setRemoteParticipants((prevUsers) => {
+          const existingUser = prevUsers[uid] || {
+            name: "",
+            rtcUid: uid,
+            videoEnabled: false,
+            audioEnabled: false
+          };
+
+          return {
+            ...prevUsers,
+            [uid]: {
+              ...existingUser,
+              audioTrack,
+              audioEnabled: true,
+              hasAudio: true
+            }
+          };
+        });
+
+        if (audioTrack) {
+          audioTrack.setVolume(100);
+          await audioTrack.play();
+        }
+      }
+
     } catch (error) {
-      console.log("Error in onMediaStreamPublished:", error);
+      console.error("[STREAM-ERROR] Error in onMediaStreamPublished:", error);
     }
   };
 
@@ -1061,13 +1114,16 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         codec: "vp8",
       });
 
-      await rtcClient.setClientRole("host");
-
-      rtcClient.enableAudioVolumeIndicator();
-
+      // Set up event handlers before joining
       rtcClient.on("user-published", onMediaStreamPublished);
       rtcClient.on("user-unpublished", onMediaStreamUnpublished);
       rtcClient.on("user-left", onParticipantLeft);
+      rtcClient.on("user-joined", (user) => {
+        console.log("User joined:", user.uid);
+      });
+
+      await rtcClient.setClientRole("host");
+      rtcClient.enableAudioVolumeIndicator();
 
       const mode = meetingConfig?.proxyMode ?? 0;
       if (mode !== 0 && !isNaN(parseInt(mode))) {
@@ -1079,6 +1135,14 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       } else if (meetingConfig.role === "host") {
         rtcClient.setClientRole(meetingConfig.role);
       }
+
+      // Join the channel
+      console.log('Joining channel with config:', {
+        appid: meetingConfig.appid,
+        channel: meetingConfig.channel,
+        uid: meetingConfig.uid
+      });
+
       meetingConfig.uid = await rtcClient.join(
         meetingConfig.appid || "",
         meetingConfig.channel || "",
@@ -1086,15 +1150,26 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         meetingConfig.uid || null
       );
 
-      try {
-        await joinRtcScreenShare();
-      } catch (error) {
-        console.warn("Failed to join screen share, but main connection succeeded:", error);
+      console.log('Successfully joined channel with UID:', meetingConfig.uid);
+
+      // Initialize messaging after successful join
+      await initializeRealtimeMessaging(username!);
+
+      // Subscribe to existing users
+      const remoteUsers = rtcClient.remoteUsers;
+      console.log('Found existing remote users:', remoteUsers.length);
+
+      for (const user of remoteUsers) {
+        if (user.hasVideo) {
+          await rtcClient.subscribe(user, "video");
+        }
+        if (user.hasAudio) {
+          await rtcClient.subscribe(user, "audio");
+        }
       }
 
-      await initializeRealtimeMessaging(username!);
     } catch (error) {
-      console.log("Error in connectToMeetingRoom:", error);
+      console.error("Error in connectToMeetingRoom:", error);
       throw error;
     }
   };
@@ -1118,18 +1193,27 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       if (localUserTrack) {
         const tracksToPublish = [];
 
-        if (localUserTrack.audioTrack) {
+        // Only publish audio track if microphone is enabled
+        if (localUserTrack.audioTrack && isMicrophoneEnabled) {
+          await localUserTrack.audioTrack.setEnabled(true);
           tracksToPublish.push(localUserTrack.audioTrack);
         }
 
-        if (localUserTrack.videoTrack) {
+        // Only publish video track if camera is enabled
+        if (localUserTrack.videoTrack && isCameraEnabled) {
+          await localUserTrack.videoTrack.setEnabled(true);
           tracksToPublish.push(localUserTrack.videoTrack);
         }
 
         if (tracksToPublish.length > 0) {
           await rtcClient.publish(tracksToPublish);
-          await broadcastCurrentMediaStates();
+          console.log('Published local tracks:', {
+            audioEnabled: isMicrophoneEnabled,
+            videoEnabled: isCameraEnabled
+          });
         }
+
+        await broadcastCurrentMediaStates();
       }
 
       // Ensure remote audio is playing after joining
@@ -1143,7 +1227,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       console.log("Error joining meeting:", error);
     }
   };
-
   const subscribeToParticipantMedia = async (user: any, mediaType: "audio" | "video") => {
     try {
       await rtcClient.subscribe(user, mediaType);
@@ -1204,6 +1287,67 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       console.log(`Error subscribing to ${mediaType}:`, error);
     }
   };
+
+  const checkAndRecoverSubscriptions = async () => {
+    if (!rtcClient) return;
+
+    const remoteUsers = rtcClient.remoteUsers;
+    const currentParticipants = { ...remoteParticipants };
+
+    for (const user of remoteUsers) {
+      const uid = String(user.uid);
+
+      // Check if we need to subscribe to video
+      if (user.hasVideo && (!currentParticipants[uid]?.videoTrack || !currentParticipants[uid]?.hasVideo)) {
+        console.log('Recovering video subscription for user:', uid);
+        try {
+          await rtcClient.subscribe(user, 'video');
+          setRemoteParticipants(prev => ({
+            ...prev,
+            [uid]: {
+              ...prev[uid],
+              videoTrack: user.videoTrack,
+              videoEnabled: true,
+              hasVideo: true
+            }
+          }));
+        } catch (error) {
+          console.error('Error recovering video subscription:', error);
+        }
+      }
+
+      // Check if we need to subscribe to audio
+      if (user.hasAudio && (!currentParticipants[uid]?.audioTrack || !currentParticipants[uid]?.hasAudio)) {
+        console.log('Recovering audio subscription for user:', uid);
+        try {
+          await rtcClient.subscribe(user, 'audio');
+          const audioTrack = user.audioTrack;
+          if (audioTrack) {
+            audioTrack.setVolume(100);
+            await audioTrack.play();
+            setRemoteParticipants(prev => ({
+              ...prev,
+              [uid]: {
+                ...prev[uid],
+                audioTrack,
+                audioEnabled: true,
+                hasAudio: true
+              }
+            }));
+          }
+        } catch (error) {
+          console.error('Error recovering audio subscription:', error);
+        }
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (hasJoinedMeeting) {
+      const recoveryInterval = setInterval(checkAndRecoverSubscriptions, 5000);
+      return () => clearInterval(recoveryInterval);
+    }
+  }, [hasJoinedMeeting]);
 
   useLayoutEffect(() => {
     if (videoRef.current !== null && localUserTrack && localUserTrack.videoTrack) {

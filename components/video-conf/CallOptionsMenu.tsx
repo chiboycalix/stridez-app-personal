@@ -9,13 +9,21 @@ import {
   Settings,
 } from 'lucide-react';
 
+type MenuItem = {
+  icon: React.ReactNode;
+  label: string;
+  shortcut?: string;
+  onClick: () => void;
+};
+
 type CallOptionsMenuProps = {
   isOpen: boolean;
   onClose: () => void;
   anchorRect?: DOMRect | null;
+  setShowInvitePeople: (showInvite: boolean) => void;
 };
 
-const CallOptionsMenu = ({ isOpen, onClose, anchorRect }: CallOptionsMenuProps) => {
+const CallOptionsMenu = ({ isOpen, onClose, anchorRect, setShowInvitePeople }: CallOptionsMenuProps) => {
   if (!anchorRect) return null;
 
   const menuPosition = {
@@ -23,19 +31,54 @@ const CallOptionsMenu = ({ isOpen, onClose, anchorRect }: CallOptionsMenuProps) 
     right: window.innerWidth - anchorRect.right + 20,
   };
 
-  const menuItems = [
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      // You could add a toast notification here
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  const menuItems: MenuItem[] = [
     {
       icon: <UserPlus className="w-4 h-4" />,
-      label: 'Pending request to join (1)',
+      label: 'Invite User',
+      onClick: () => {
+        setShowInvitePeople(true);
+        onClose();
+      }
     },
     {
       icon: <ArrowLeft className="w-4 h-4" />,
       label: 'Be Right Back',
-      shortcut: 'BRB'
+      shortcut: 'BRB',
+      onClick: () => {
+        onClose();
+      }
     },
     {
       icon: <MonitorPlay className="w-4 h-4" />,
       label: 'Enable Picture-in-Picture',
+      onClick: async () => {
+        try {
+          const video = document.querySelector('video');
+          if (video && document.pictureInPictureEnabled) {
+            await video.requestPictureInPicture();
+          }
+        } catch (err) {
+          console.error('PiP failed:', err);
+        }
+        onClose();
+      }
     },
     {
       icon: (
@@ -44,6 +87,11 @@ const CallOptionsMenu = ({ isOpen, onClose, anchorRect }: CallOptionsMenuProps) 
         </div>
       ),
       label: 'Share to Whatsapp',
+      onClick: () => {
+        const shareUrl = encodeURIComponent(window.location.href);
+        window.open(`https://wa.me/?text=${shareUrl}`, '_blank');
+        onClose();
+      }
     },
     {
       icon: (
@@ -52,18 +100,36 @@ const CallOptionsMenu = ({ isOpen, onClose, anchorRect }: CallOptionsMenuProps) 
         </div>
       ),
       label: 'Share to X',
+      onClick: () => {
+        const shareUrl = encodeURIComponent(window.location.href);
+        const text = encodeURIComponent('Join my meeting!');
+        window.open(`https://twitter.com/intent/tweet?url=${shareUrl}&text=${text}`, '_blank');
+        onClose();
+      }
     },
     {
       icon: <Link className="w-4 h-4" />,
       label: 'Copy link',
+      onClick: () => {
+        handleCopyLink();
+        onClose();
+      }
     },
     {
       icon: <Maximize2 className="w-4 h-4" />,
       label: 'Go Fullscreen',
+      onClick: () => {
+        toggleFullscreen();
+        onClose();
+      }
     },
     {
       icon: <Settings className="w-4 h-4" />,
       label: 'Settings',
+      onClick: () => {
+        // Handle settings
+        onClose();
+      }
     },
   ];
 
@@ -97,7 +163,7 @@ const CallOptionsMenu = ({ isOpen, onClose, anchorRect }: CallOptionsMenuProps) 
             {menuItems.map((item, index) => (
               <button
                 key={index}
-                onClick={onClose}
+                onClick={item.onClick}
                 className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-800 transition-colors text-left"
               >
                 <span className="text-gray-400">{item.icon}</span>

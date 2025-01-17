@@ -25,69 +25,63 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
   isScreenShare = false
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<any>(null);
   const { isCameraEnabled, meetingConfig } = useVideoConferencing();
   const isLocalUser = uid === meetingConfig?.uid;
 
+  // Clean up previous video track
   useEffect(() => {
-    videoRef.current = videoTrack;
     return () => {
-      videoRef.current = null;
-    };
-  }, [videoTrack]);
-
-  useEffect(() => {
-    let isPlaying = false;
-    const currentContainer = containerRef.current;
-
-    const initializeVideo = async () => {
-      if (!videoRef.current || !currentContainer) {
-        return;
+      if (videoTrack) {
+        try {
+          videoTrack.stop();
+          console.log('[STREAM-PLAYER] Cleaned up video track for uid:', uid);
+        } catch (error) {
+          console.error('[STREAM-PLAYER] Error cleaning up video track:', error);
+        }
       }
+    };
+  }, [videoTrack, uid]);
 
-      const shouldPlay = isScreenShare || (isLocalUser && isCameraEnabled) || !isLocalUser;
+  // Initialize or update video track
+  useEffect(() => {
+    const initVideo = async () => {
+      if (!videoTrack || !containerRef.current) return;
+
+      const shouldPlay = isScreenShare || !isLocalUser || (isLocalUser && isCameraEnabled);
+      if (!shouldPlay) return;
 
       try {
-        if (shouldPlay && !isPlaying) {
-          if (currentContainer.childNodes.length === 0) {
-            await videoRef.current.play(currentContainer, {
-              fit: isScreenShare ? 'contain' : 'cover',
-              ...options
-            });
-            isPlaying = true;
-          }
-        } else if (!shouldPlay && isPlaying) {
-          videoRef.current.stop();
-          if (currentContainer) {
-            currentContainer.innerHTML = '';
-          }
-          isPlaying = false;
+        // Clear existing content
+        while (containerRef.current.firstChild) {
+          containerRef.current.removeChild(containerRef.current.firstChild);
         }
+
+        // Play new track
+        await videoTrack.play(containerRef.current, {
+          fit: isScreenShare ? 'contain' : 'cover',
+          ...options
+        });
+
+        console.log('[STREAM-PLAYER] Successfully playing video for uid:', uid);
       } catch (error) {
-        console.log(`Error managing video for uid ${uid}:`, error);
-        isPlaying = false;
+        console.error('[STREAM-PLAYER] Error playing video:', error);
       }
     };
 
-    initializeVideo();
-
-    return () => {
-      if (videoRef.current && isPlaying) {
-        try {
-          videoRef.current.stop();
-          if (currentContainer) {
-            currentContainer.innerHTML = '';
-          }
-        } catch (error) {
-          console.log('Error cleaning up video:', error);
-        }
-      }
-    };
-  }, [videoTrack, uid, isCameraEnabled, isLocalUser, isScreenShare, options]);
+    initVideo();
+  }, [videoTrack, isLocalUser, isCameraEnabled, isScreenShare, options, uid]);
 
   const shouldShowVideo = isScreenShare ?
     !!videoTrack :
-    videoTrack && ((isLocalUser && isCameraEnabled) || !isLocalUser);
+    videoTrack && (!isLocalUser || (isLocalUser && isCameraEnabled));
+
+  console.log('[STREAM-PLAYER] Render state:', {
+    uid,
+    shouldShowVideo,
+    hasTrack: !!videoTrack,
+    isLocalUser,
+    cameraEnabled: isCameraEnabled
+  });
 
   return (
     <div className="relative w-full h-full">
@@ -102,5 +96,3 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
     </div>
   );
 };
-
-export default StreamPlayer;
