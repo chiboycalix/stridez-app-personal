@@ -25,62 +25,83 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
   isScreenShare = false
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const videoTrackRef = useRef(videoTrack);
   const playingStateRef = useRef<boolean>(false);
   const { isCameraEnabled, meetingConfig } = useVideoConferencing();
   const isLocalUser = uid === meetingConfig?.uid;
 
-  useEffect(() => {
-    let isMounted = true;
-    const currentContainer = containerRef.current;
-
-    const initializeVideo = async () => {
-      if (!videoTrack || !currentContainer || !isMounted) return;
-
-      const shouldPlay = isScreenShare || (isLocalUser && isCameraEnabled) || !isLocalUser;
-
+  // Track cleanup function
+  const cleanupVideoTrack = () => {
+    if (videoTrackRef.current && playingStateRef.current) {
       try {
-        if (shouldPlay && !playingStateRef.current) {
-          if (currentContainer.childNodes.length === 0) {
-            await videoTrack.play(currentContainer, {
-              fit: isScreenShare ? 'contain' : 'cover',
-              ...options
-            });
-            if (isMounted) {
-              playingStateRef.current = true;
-            }
-          }
-        } else if (!shouldPlay && playingStateRef.current) {
-          videoTrack.stop();
-          if (currentContainer && isMounted) {
-            currentContainer.innerHTML = '';
-            playingStateRef.current = false;
-          }
+        videoTrackRef.current.stop();
+        if (containerRef.current) {
+          containerRef.current.innerHTML = '';
         }
+        playingStateRef.current = false;
       } catch (error) {
-        console.log(`Error managing video for uid ${uid}:`, error);
-        if (isMounted) {
-          playingStateRef.current = false;
+        console.log('Error cleaning up video:', error);
+      }
+    }
+  };
+
+  // Initialize or update video playback
+  const initializeVideo = async () => {
+    const currentContainer = containerRef.current;
+    if (!videoTrack || !currentContainer) return;
+
+    const shouldPlay = isScreenShare || (isLocalUser && isCameraEnabled) || !isLocalUser;
+
+    try {
+      // If we need to play and aren't already playing
+      if (shouldPlay && !playingStateRef.current) {
+        // Clean up any existing playback first
+        cleanupVideoTrack();
+
+        // Initialize new playback
+        if (currentContainer.childNodes.length === 0) {
+          await videoTrack.play(currentContainer, {
+            fit: isScreenShare ? 'contain' : 'cover',
+            ...options
+          });
+          playingStateRef.current = true;
+          videoTrackRef.current = videoTrack;
         }
       }
-    };
+      // If we shouldn't play but are currently playing
+      else if (!shouldPlay && playingStateRef.current) {
+        cleanupVideoTrack();
+      }
+    } catch (error) {
+      console.log(`Error managing video for uid ${uid}:`, error);
+      playingStateRef.current = false;
+    }
+  };
 
-    initializeVideo();
+  // Handle track changes
+  useEffect(() => {
+    if (videoTrack !== videoTrackRef.current) {
+      cleanupVideoTrack();
+      videoTrackRef.current = videoTrack;
+      if (videoTrack) {
+        initializeVideo();
+      }
+    }
+  }, [videoTrack]);
 
+  // Handle camera enabled state changes
+  useEffect(() => {
+    if (isLocalUser) {
+      initializeVideo();
+    }
+  }, [isCameraEnabled]);
+
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
-      isMounted = false;
-      if (videoTrack && playingStateRef.current) {
-        try {
-          videoTrack.stop();
-          if (currentContainer) {
-            currentContainer.innerHTML = '';
-          }
-          playingStateRef.current = false;
-        } catch (error) {
-          console.log('Error cleaning up video:', error);
-        }
-      }
+      cleanupVideoTrack();
     };
-  }, [videoTrack, uid, isCameraEnabled, isLocalUser, isScreenShare, options]);
+  }, []);
 
   const shouldShowVideo = isScreenShare ?
     !!videoTrack :
