@@ -114,7 +114,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }, [isAuthenticated]);
 
-
   const setAuth = (authState: boolean, user: UserType | null, accessToken?: string): void => {
     if (authState && user && accessToken) {
       Cookies.set("accessToken", accessToken, COOKIE_OPTIONS);
