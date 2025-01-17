@@ -5,7 +5,6 @@ import { ILocalTrack, Options } from '@/types';
 import { createContext, useContext, useState, ReactNode, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { agoraGetAppData } from '@/lib';
 import { IRemoteAudioTrack, IRemoteVideoTrack } from "agora-rtc-sdk-ng";
-import { useVolumeLevels } from "@/hooks/useVolumeLevels";
 import { rateLimiter } from "@/utils/MessageRateLimiter";
 
 interface RemoteParticipant {
