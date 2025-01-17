@@ -123,8 +123,8 @@ const PostItem = ({ post }: PostItemType) => {
 
   useEffect(() => {
     const liked = localStorage.getItem(`post-like-${post.id}`);
-    if (liked) {
-      setIsLiked(true);
+    if (liked !== null) {
+      setIsLiked(JSON.parse(liked));
     }
   }, [isLiked, post.id]);
 

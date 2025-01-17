@@ -4,6 +4,7 @@ import GallerySlider from './GallerySlider'
 import { PostMediaType, usePost } from '@/context/PostContext'
 import { useVideoPlayback } from '@/context/VideoPlaybackContext'
 import Cookies from "js-cookie";
+import { baseUrl } from '@/utils/constant'
 
 type MediaWrapperProps = {
   title: string
@@ -80,7 +81,7 @@ const MediaWrapper: React.FC<MediaWrapperProps> = ({
 
               if (postMedia) {
                 fetch(
-                  `${process.env.REACT_APP_BASEURL}/media/${postMedia[0].id}/view`,
+                  `${baseUrl}/media/${postMedia[0].id}/view`,
                   {
                     method: 'POST',
                     headers: {

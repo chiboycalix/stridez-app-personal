@@ -32,7 +32,11 @@ const PostModal = ({ isOpen, onClose, post, currentUser }: PostModalProps) => {
 
   const baseUrl = process.env.NEXT_PUBLIC_BASEURL;
   const postSocial = [
-    { icon: <FaHeart />, value: post?.metadata?.likesCount, alt: "likes" },
+    {
+      icon: <FaHeart />,
+      value: post?.metadata?.likesCount,
+      alt: "likes",
+    },
     {
       icon: <FaRegCommentDots />,
       value: post?.metadata?.commentsCount,
@@ -326,15 +330,16 @@ const PostModal = ({ isOpen, onClose, post, currentUser }: PostModalProps) => {
                               <Menu.Item key={index}>
                                 {({ active }) => (
                                   <button
-                                    className={`${active
+                                    className={`${
+                                      active
                                         ? "bg-gray-200 text-gray-900"
                                         : "text-gray-700"
-                                      } group flex rounded-md items-center w-full px-2 py-2 text-sm`}
+                                    } group flex rounded-md items-center w-full px-2 py-2 text-sm`}
                                     onClick={
                                       option === "Delete Post"
                                         ? () => {
-                                          handleSetViewOpen();
-                                        }
+                                            handleSetViewOpen();
+                                          }
                                         : undefined
                                     }
                                   >
