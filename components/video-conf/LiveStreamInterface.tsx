@@ -119,10 +119,10 @@ const LiveStreamInterface = () => {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-[150] bg-white">
+    <div className="fixed inset-0 flex items-center justify-center z-[150] bg-[#1A1C1D] border border-gray-600">
       <div className="w-full h-full flex flex-col max-w-[1440px] mx-auto p-2 md:p-4 lg:p-6">
         {/* Top Bar */}
-        <div className="flex items-center justify-between mb-2 md:mb-4">
+        {/* <div className="flex items-center justify-between mb-2 md:mb-4">
           <div className="w-6 md:w-8 lg:w-12" />
           <div className="bg-black flex items-center gap-1.5 md:gap-2 rounded-md p-2">
             <div className="text-white flex items-center gap-0.5 md:gap-1">
@@ -134,11 +134,11 @@ const LiveStreamInterface = () => {
               <span className="hidden md:inline text-xs md:text-sm lg:text-base">Record</span>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Main Video Area */}
         <div className={cn(
-          "relative flex-1 bg-black rounded-md overflow-hidden",
+          "relative flex-1 rounded-md overflow-hidden",
           showInvitePeople && "blur-sm"
         )}>
 
@@ -148,12 +148,12 @@ const LiveStreamInterface = () => {
             <>
               <div className="text-white flex h-full">
                 {/* Left Side - Only show when single participant */}
-                <div className="w-8 md:w-12 lg:w-28 flex flex-col justify-end p-2">
+                {totalParticipants === 1 && <div className="w-8 md:w-12 lg:w-28 flex flex-col justify-end p-2">
                   <span className="text-xs md:text-sm lg:text-base">
                     {totalParticipants === 1 && generalHelpers.convertFromSlug(username!)}
                   </span>
                 </div>
-
+                }
                 {/* center side video grid */}
                 <div className="flex-1">
                   <VideoGrid
@@ -168,28 +168,31 @@ const LiveStreamInterface = () => {
                 </div>
 
                 {/* Right Side - Only show when single participant */}
-                <div className="w-8 md:w-12 lg:w-28 flex flex-col justify-between items-end p-2">
-                  {
-                    totalParticipants === 1 && (<>
-                      <div className="cursor-pointer hover:bg-gray-800/50 p-1 md:p-1.5 lg:p-2 rounded-lg transition-colors">
-                        {isMicrophoneEnabled ? (
-                          <Mic className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5" />
-                        ) : (
-                          <MicOff className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5" />
-                        )}
-                      </div>
-                      <div
-                        onClick={handleVolumeControlClick}
-                        className={cn(
-                          "cursor-pointer hover:bg-gray-800/50 p-1 md:p-1.5 lg:p-2 rounded-lg transition-colors",
-                          showVolumePopup && "bg-gray-800/50"
-                        )}
-                      >
-                        <MoreVertical className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5" />
-                      </div>
-                    </>)
-                  }
-                </div>
+                {
+                  totalParticipants === 1 && <div className="w-8 md:w-12 lg:w-28 flex flex-col justify-between items-end p-2">
+                    {
+                      (<>
+                        <div className="cursor-pointer hover:bg-gray-800/50 p-1 md:p-1.5 lg:p-2 rounded-lg transition-colors">
+                          {isMicrophoneEnabled ? (
+                            <Mic className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5" />
+                          ) : (
+                            <MicOff className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5" />
+                          )}
+                        </div>
+                        <div
+                          onClick={handleVolumeControlClick}
+                          className={cn(
+                            "cursor-pointer hover:bg-gray-800/50 p-1 md:p-1.5 lg:p-2 rounded-lg transition-colors",
+                            showVolumePopup && "bg-gray-800/50"
+                          )}
+                        >
+                          <MoreVertical className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5" />
+                        </div>
+                      </>)
+                    }
+                  </div>
+                }
+
               </div>
 
               <AnimatePresence>
@@ -280,29 +283,33 @@ const LiveStreamInterface = () => {
 
         {/* Bottom Controls */}
         <div className={cn(
-          "mt-4 md:mt-8",
+          "mt-4 md:mt-8 relative isolate", // Added isolate
           showInvitePeople && "blur-sm"
         )}>
           <div className="overflow-x-auto pb-4 md:pb-0">
             <div className="flex items-center justify-between min-w-[640px] md:min-w-0 gap-4 md:grid md:grid-cols-3 md:gap-2 lg:gap-4">
               <div className="flex items-center gap-1 md:gap-2">
                 <IconButton
-                  leftIcon={isMicrophoneEnabled ? <Mic size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" /> : <MicOff size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />}
+                  leftIcon={isMicrophoneEnabled ?
+                    <Mic size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" /> :
+                    <MicOff size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />
+                  }
                   showDivider
                   onLeftClick={toggleMicrophone}
                   onRightClick={() => { }}
-                  className=""
-                  tooltip="Toggle microphone"
+                  tooltip={isMicrophoneEnabled ? "Mute microphone" : "Unmute microphone"}
                   rightTooltip="Microphone settings"
                 />
                 <IconButton
-                  leftIcon={isCameraEnabled ? <Video size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" /> : <VideoOff size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />}
+                  leftIcon={isCameraEnabled ?
+                    <Video size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" /> :
+                    <VideoOff size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />
+                  }
                   showDivider
                   onLeftClick={toggleCamera}
                   onRightClick={() => { }}
-                  className=""
-                  tooltip="Toggle Video"
-                  rightTooltip="Microphone settings"
+                  tooltip={isCameraEnabled ? "Turn off camera" : "Turn on camera"}
+                  rightTooltip="Camera settings"
                 />
               </div>
 
@@ -315,15 +322,15 @@ const LiveStreamInterface = () => {
                   onLeftClick={isSharingScreen ? handleEndScreenShare : handleShareScreen}  // Use the new handler
                   onRightClick={() => { }}
                   className=""
-                  tooltip=""
+                  tooltip="Share screen"
                   rightTooltip="Screen sharing settings"
                 />
                 <IconButton
                   leftIcon={<SquareArrowOutUpRight size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />}
                   onLeftClick={() => { }}
                   className=""
-                  tooltip="Share screen"
-                  rightTooltip="Share screen settings"
+                  tooltip=""
+                  rightTooltip=""
                 />
                 <IconButton
                   leftIcon={<Smile size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />}
@@ -380,6 +387,7 @@ const LiveStreamInterface = () => {
         isOpen={showOptionsMenu}
         onClose={() => setShowOptionsMenu(false)}
         anchorRect={optionsAnchorRect}
+        setShowInvitePeople={setShowInvitePeople}
       />
       <EmojiPopup
         isOpen={showEmojiPopup}
