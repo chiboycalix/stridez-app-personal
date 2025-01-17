@@ -51,7 +51,12 @@ export default function SignInForm({
         );
         setLoading(false);
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.log({ error }, "errorrrr")
+      if (error.code === "API_ERR_INVALID_LOGIN") {
+        setAlert(error.message);
+        return;
+      }
       setAlert("An error occurred while signing in. Please try again later.");
     } finally {
       setLoading(false);

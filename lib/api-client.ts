@@ -29,7 +29,6 @@ apiClient.interceptors.response.use(
       switch (error.response.status) {
         case 401:
           Cookies.remove("accessToken");
-          window.location.href = "/auth?tab=signin";
           break;
         case 403:
           console.log("Forbidden access:", error.response.data);

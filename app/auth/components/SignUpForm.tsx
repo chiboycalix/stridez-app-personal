@@ -44,15 +44,20 @@ export default function SignUpForm({
         email,
         password
       }) as any;
-      if (data.code === 200) {
+      if (data.code === 201) {
         setAlert(data.message);
         setLoading(false);
         router.push(`${ROUTES.VALIDATE_OTP(email)}`);
       } else {
         setAlert(data.message);
       }
-    } catch (error) {
-      setAlert(`Error: ${error}`);
+    } catch (error: any) {
+      if (error.message === "APIError: User already exists") {
+        setAlert("User already exists");
+        return;
+      }
+      setAlert(error.message);
+
     } finally {
       setLoading(false);
       setLoading(false);
