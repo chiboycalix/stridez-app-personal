@@ -550,15 +550,12 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     if (localUserTrack && localUserTrack.audioTrack) {
       try {
         const newState = !isMicrophoneEnabled;
+
+        // Only mute the local audio track
         await localUserTrack.audioTrack.setEnabled(newState);
 
-        if (newState && !localUserTrack.audioTrack.isPublished) {
-          try {
-            await rtcClient?.publish([localUserTrack.audioTrack]);
-          } catch (error) {
-            console.log("Error publishing audio track:", error);
-          }
-        }
+        // Ensure remote audio keeps playing
+        ensureRemoteAudioPlaying();
 
         if (rtmChannel) {
           await sendRateLimitedMessage({
@@ -576,6 +573,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       }
     }
   };
+
   const toggleCamera = async () => {
     try {
       if (localUserTrack?.videoTrack) {
@@ -600,6 +598,14 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       console.log("Error toggling video:", error);
     }
   };
+
+  useEffect(() => {
+    if (hasJoinedMeeting) {
+      const audioCheckInterval = setInterval(ensureRemoteAudioPlaying, 5000);
+
+      return () => clearInterval(audioCheckInterval);
+    }
+  }, [hasJoinedMeeting]);
 
   useEffect(() => {
     rateLimiter.startResetTimer();
@@ -834,9 +840,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       const uid = String(user.uid);
 
       if (user.videoTrack?.isScreenTrack) {
-        // This is a screen share track
-        console.log("Subscribing to screen share track from user:", uid);
-
         setRemoteParticipants((prevUsers) => ({
           ...prevUsers,
           [uid]: {
@@ -852,14 +855,13 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
           isLocal: false
         });
 
-        // Try to play the screen share track immediately
         try {
           user.videoTrack.play();
         } catch (error) {
           console.log("Error playing screen share track:", error);
         }
       } else {
-        // Regular video/audio track
+        // Handle regular video/audio tracks
         if (mediaType === "video") {
           setRemoteParticipants((prevUsers) => ({
             ...prevUsers,
@@ -870,8 +872,10 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
             },
           }));
         }
+
         if (mediaType === "audio") {
           const audioTrack = user.audioTrack;
+
           setRemoteParticipants((prevUsers) => ({
             ...prevUsers,
             [uid]: {
@@ -880,12 +884,30 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
               audioEnabled: true
             },
           }));
-          audioTrack.play();
+
+          // Configure and play the audio track
+          audioTrack.setVolume(100);
+          await audioTrack.play();
+
+          // Ensure all remote audio is still playing
+          ensureRemoteAudioPlaying();
         }
       }
     } catch (error) {
       console.log("Error in onMediaStreamPublished:", error);
     }
+  };
+
+  // Also add this helper function to handle remote audio recovery
+  const ensureRemoteAudioPlaying = () => {
+    rtcClient?.remoteUsers.forEach(user => {
+      if (user.audioTrack) {
+        user.audioTrack.setVolume(100);
+        if (!user.audioTrack.isPlaying) {
+          user.audioTrack.play()
+        }
+      }
+    });
   };
 
   const onMediaStreamUnpublished = async (user: any, mediaType: "audio" | "video") => {
@@ -1109,7 +1131,11 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
           await broadcastCurrentMediaStates();
         }
       }
-      AgoraRTC.setLogLevel(1)
+
+      // Ensure remote audio is playing after joining
+      ensureRemoteAudioPlaying();
+
+      AgoraRTC.setLogLevel(1);
       setHasJoinedMeeting(true);
       setMeetingStage("hasJoinedMeeting");
       setMeetingConfig(meetingConfig);
