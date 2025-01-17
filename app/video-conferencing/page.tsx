@@ -73,7 +73,7 @@ export default function VideoConferencing() {
       <Toastify message={alert} />
       <div className='flex flex-col items-center justify-center md:h-[88vh] h-[85vh] bg-white'>
         <div className='max-w-3xl mx-auto'>
-          <p className='text-black text-xl'>
+          <p className='text-black text-xl text-center'>
             You&apos;re all set! start your streaming now
           </p>
           <div className="w-full border-b my-8"></div>
