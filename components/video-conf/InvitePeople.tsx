@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import axios from "axios";
 import { baseUrl } from "@/utils/constant";
+import { useVideoConferencing } from "@/context/VideoConferencingContext";
+import Cookies from "js-cookie";
 
 type User = {
   id: string;
@@ -22,8 +24,11 @@ const InvitePeopleTab = () => {
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
   const [externalEmailUsers, setExternalEmailUsers] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("following");
+  const roomId = useVideoConferencing()?.channelName;
 
   const userId = getCurrentUser()?.id;
+
+  console.log("roomId", roomId);
 
   // Fetch Data for Followers and Followings
   const fetchFollowings = async () => {
@@ -47,6 +52,32 @@ const InvitePeopleTab = () => {
       setFollowers(response?.data?.data?.followers);
     } catch (error) {
       console.error("Error fetching followers:", error);
+    }
+  };
+
+  const sendInvites = async () => {
+    try {
+      const token = Cookies.get("accessToken"); // Get token from cookies
+      const response = await fetch(`${baseUrl}/rooms/invite-participant`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          externalParticipant: externalEmailUsers,
+          internalParticipant: selectedUsers.map((user) => user.email),
+          roomCode: roomId,
+        }),
+      });
+      console.log(response);
+      if (response.status === 200) {
+        alert("Invites sent successfully");
+        setSelectedUsers([]);
+        setExternalEmailUsers([]);
+      }
+    } catch (error) {
+      console.error("Error sending invites:", error);
     }
   };
 
@@ -104,9 +135,9 @@ const InvitePeopleTab = () => {
       {/* Following Tab */}
       <TabsContent value="following">
         {/* Selected Users Badges */}
-        {selectedUsers.length > 0 && (
+        {selectedUsers?.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-2">
-            {selectedUsers.map((user) => (
+            {selectedUsers?.map((user) => (
               <div
                 key={user.id}
                 className="flex items-center gap-1 bg-primary-100 text-primary-900 px-2 py-1 rounded-full text-sm"
@@ -194,9 +225,9 @@ const InvitePeopleTab = () => {
             }
           }}
         />
-        {externalEmailUsers.length > 0 && (
+        {externalEmailUsers?.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-2">
-            {externalEmailUsers.map((email, index) => (
+            {externalEmailUsers?.map((email, index) => (
               <div
                 key={index}
                 className="flex items-center gap-1 bg-primary-100 text-primary-900 px-2 py-1 rounded-full text-sm"
@@ -222,15 +253,9 @@ const InvitePeopleTab = () => {
         <div className="mt-6">
           <Button
             className="w-full bg-primary-900 text-white hover:bg-primary-800"
-            onClick={() =>
-              console.log(
-                "Sending invites to:",
-                selectedUsers,
-                externalEmailUsers
-              )
-            }
+            onClick={() => sendInvites().then}
           >
-            Send Invite ({selectedUsers.length + externalEmailUsers.length})
+            Send Invite ({selectedUsers?.length + externalEmailUsers?.length})
           </Button>
         </div>
       )}

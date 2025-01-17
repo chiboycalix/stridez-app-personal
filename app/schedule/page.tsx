@@ -22,6 +22,7 @@ import Cookies from "js-cookie";
 import { baseUrl } from "@/utils/constant";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import MeetingHistory from "@/components/schedules/MeetingHistory";
 
 type Room = {
   roomCode: string;
@@ -61,6 +62,7 @@ export default function SchedulePage() {
   const [currentCoHostInput, setCurrentCoHostInput] = useState<string>("");
   const [coHostUsernames, setCoHostUsernames] = useState<string[]>([]);
   const [coHostSuggestions, setCoHostSuggestions] = useState<string[]>([]);
+  const [meetingHistory, setMeetingHistory] = useState<any[]>([]);
   const { isAuthenticated } = useAuth();
   const router = useRouter();
 
@@ -83,11 +85,30 @@ export default function SchedulePage() {
     }
   }, []);
 
+  const fetchMeetingHistory = useCallback(async () => {
+    try {
+      const response = await fetch(`${baseUrl}/rooms`, {
+        headers: {
+          Authorization: `Bearer ${Cookies.get("accessToken")}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch meeting history");
+
+      const data = await response.json();
+      console.log(data);
+      setMeetingHistory(data.data);
+    } catch (error) {
+      console.log("Error fetching meeting history:", error);
+    }
+  }, []);
+
   useEffect(() => {
     if (!isAuthenticated) {
       router.push("/auth?tab=signin");
     }
     fetchSchedules();
+    fetchMeetingHistory();
   }, [fetchSchedules]);
 
   const formatTime = (timeString: string): string => {
@@ -308,7 +329,14 @@ export default function SchedulePage() {
 
   return (
     <div className="container mx-auto p-4 min-h-[85vh]">
-      <h1 className="text-2xl font-bold mb-4">Sessions you have scheduled</h1>
+      {/* <h1 className="text-2xl font-bold mb-4">Sessions you have scheduled</h1> */}
+      <h1 className="text-2xl font-bold mb-4">Meeting History</h1>
+
+      {
+        meetingHistory.length > 0 && (
+          <MeetingHistory meetings={meetingHistory} />
+        )
+      }
       {successMessage && (
         <div
           className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4"
@@ -355,10 +383,11 @@ export default function SchedulePage() {
               <button
                 onClick={() => handleStartLive(schedule.room.roomCode)}
                 disabled={schedule.isOngoing}
-                className={`px-4 py-2 rounded-md text-sm font-medium ${schedule.isOngoing
+                className={`px-4 py-2 rounded-md text-sm font-medium ${
+                  schedule.isOngoing
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : "bg-blue-500 text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-                  }`}
+                }`}
               >
                 Start Now
               </button>
