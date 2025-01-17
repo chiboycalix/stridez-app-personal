@@ -52,9 +52,6 @@ const MeetingHistory: React.FC<MeetingHistoryProps> = ({ meetings }) => {
     }
   };
 
-  useEffect(() => {
-    fetchMeetingAnalytics("abbf-fecc-fbbd");
-  }, []);
 
   return (
     <>
