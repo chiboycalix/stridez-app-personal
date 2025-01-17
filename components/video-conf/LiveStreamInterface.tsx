@@ -158,14 +158,12 @@ const LiveStreamInterface = () => {
                 <div className="flex-1">
                   <VideoGrid
                     localUser={{
-                      videoTrack: localUserTrack?.videoTrack,
-                      audioTrack: localUserTrack?.audioTrack,
-                      uid: meetingConfig?.uid
+                      ...localUserTrack,
+                      videoEnabled: isCameraEnabled,
+                      audioEnabled: isMicrophoneEnabled
                     }}
                     remoteParticipants={remoteParticipants}
-                    StreamPlayer={StreamPlayer}
-                    totalParticipants={totalParticipants}
-                    showControls={totalParticipants > 1}
+                    showControls={true}
                   />
                 </div>
 

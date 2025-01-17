@@ -9,12 +9,37 @@ export function ParticipantVideo({ participant, customClasses = '' }: any) {
     isMicrophoneEnabled,
     isCameraEnabled,
     speakingParticipants,
+    meetingConfig
   } = useVideoConferencing();
 
-  const videoState = participant.isLocal ? isCameraEnabled :
-    (participant.videoEnabled !== false && participant.videoTrack);
+  console.log('[PARTICIPANT-VIDEO] Rendering participant:', {
+    uid: participant.uid,
+    isLocal: participant.isLocal,
+    hasVideoTrack: !!participant.videoTrack,
+    hasAudioTrack: !!participant.audioTrack,
+    videoEnabled: participant.videoEnabled,
+    audioEnabled: participant.audioEnabled
+  });
 
-  const audioState = participant.isLocal ? isMicrophoneEnabled : participant.audioEnabled;
+  // Enhanced video state logic
+  const videoState = participant.isLocal ?
+    (isCameraEnabled && !!participant.videoTrack) :
+    (participant.videoEnabled !== false && !!participant.videoTrack);
+
+  console.log('[PARTICIPANT-VIDEO] Video state calculation:', {
+    uid: participant.uid,
+    isLocal: participant.isLocal,
+    videoState,
+    isCameraEnabled,
+    videoEnabled: participant.videoEnabled,
+    hasTrack: !!participant.videoTrack
+  });
+
+  // Enhanced audio state logic
+  const audioState = participant.isLocal ?
+    (isMicrophoneEnabled && !!participant.audioTrack) :
+    (participant.audioEnabled !== false && !!participant.audioTrack);
+
   const displayName = participant.isLocal ? 'You' : (participant.name || `User ${participant.uid}`);
   const isSpeaking = speakingParticipants[participant?.uid];
 
@@ -49,7 +74,6 @@ export function ParticipantVideo({ participant, customClasses = '' }: any) {
     </div>
   );
 }
-
 
 export function RegularGrid({ participants }: any) {
   const count = participants.length;
@@ -188,36 +212,72 @@ export function ParticipantsColumn({ participants }: any) {
 export function VideoGrid({
   localUser,
   remoteParticipants,
-  StreamPlayer,
   showControls = true,
 }: any) {
   const {
     userIsHost,
     meetingRoomData,
     isSharingScreen,
+    meetingConfig
   } = useVideoConferencing();
 
   const { participants } = useMemo(() => {
+    console.log('[VIDEO-GRID] Mapping participants:', {
+      localUser,
+      remoteParticipants: Object.keys(remoteParticipants || {})
+    });
+
     const validRemoteParticipants = Object.entries(remoteParticipants || {})
       .map(([uid, user]: any) => {
+        // Ensure we're not including the local user in remote participants
+        if (uid === String(meetingConfig?.uid)) {
+          console.log('[VIDEO-GRID] Skipping local user from remote participants:', uid);
+          return null;
+        }
+
         const isHost = meetingRoomData?.room?.roomSubscribers?.some(
           (subscriber: any) => subscriber.isOwner && subscriber.user?.id === user.uid
         );
 
+        console.log('[VIDEO-GRID] Processing remote participant:', {
+          uid,
+          hasVideoTrack: !!user.videoTrack,
+          hasAudioTrack: !!user.audioTrack,
+          videoEnabled: user.videoEnabled,
+          audioEnabled: user.audioEnabled
+        });
+
         return {
           ...user,
           uid,
-          isHost
+          isHost,
+          isLocal: false  // Explicitly mark as remote
         };
-      });
+      })
+      .filter(Boolean); // Remove null entries
+
+    // Prepare local user with correct properties
+    const preparedLocalUser = {
+      ...localUser,
+      uid: meetingConfig?.uid,
+      isLocal: true,
+      isHost: userIsHost,
+      videoEnabled: localUser.videoEnabled ?? true,
+      audioEnabled: localUser.audioEnabled ?? true
+    };
+
+    console.log('[VIDEO-GRID] Final participants:', {
+      localUser: preparedLocalUser,
+      remoteCount: validRemoteParticipants.length
+    });
 
     return {
       participants: [
-        { ...localUser, isLocal: true, isHost: userIsHost },
+        preparedLocalUser,
         ...validRemoteParticipants
       ].filter(p => p !== null && p !== undefined)
     };
-  }, [localUser, remoteParticipants, userIsHost, meetingRoomData]);
+  }, [localUser, remoteParticipants, userIsHost, meetingRoomData, meetingConfig?.uid]);
 
   if (isSharingScreen) {
     return (

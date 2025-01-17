@@ -25,87 +25,63 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
   isScreenShare = false
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const videoTrackRef = useRef(videoTrack);
-  const playingStateRef = useRef<boolean>(false);
   const { isCameraEnabled, meetingConfig } = useVideoConferencing();
   const isLocalUser = uid === meetingConfig?.uid;
 
-  // Track cleanup function
-  const cleanupVideoTrack = () => {
-    if (videoTrackRef.current && playingStateRef.current) {
-      try {
-        videoTrackRef.current.stop();
-        if (containerRef.current) {
-          containerRef.current.innerHTML = '';
-        }
-        playingStateRef.current = false;
-      } catch (error) {
-        console.log('Error cleaning up video:', error);
-      }
-    }
-  };
-
-  // Initialize or update video playback
-  const initializeVideo = async () => {
-    const currentContainer = containerRef.current;
-    if (!videoTrack || !currentContainer) return;
-
-    const shouldPlay = isScreenShare || (isLocalUser && isCameraEnabled) || !isLocalUser;
-
-    try {
-      // If we need to play and aren't already playing
-      if (shouldPlay && !playingStateRef.current) {
-        // Clean up any existing playback first
-        cleanupVideoTrack();
-
-        // Initialize new playback
-        if (currentContainer.childNodes.length === 0) {
-          await videoTrack.play(currentContainer, {
-            fit: isScreenShare ? 'contain' : 'cover',
-            ...options
-          });
-          playingStateRef.current = true;
-          videoTrackRef.current = videoTrack;
-        }
-      }
-      // If we shouldn't play but are currently playing
-      else if (!shouldPlay && playingStateRef.current) {
-        cleanupVideoTrack();
-      }
-    } catch (error) {
-      console.log(`Error managing video for uid ${uid}:`, error);
-      playingStateRef.current = false;
-    }
-  };
-
-  // Handle track changes
-  useEffect(() => {
-    if (videoTrack !== videoTrackRef.current) {
-      cleanupVideoTrack();
-      videoTrackRef.current = videoTrack;
-      if (videoTrack) {
-        initializeVideo();
-      }
-    }
-  }, [videoTrack]);
-
-  // Handle camera enabled state changes
-  useEffect(() => {
-    if (isLocalUser) {
-      initializeVideo();
-    }
-  }, [isCameraEnabled]);
-
-  // Cleanup on unmount
+  // Clean up previous video track
   useEffect(() => {
     return () => {
-      cleanupVideoTrack();
+      if (videoTrack) {
+        try {
+          videoTrack.stop();
+          console.log('[STREAM-PLAYER] Cleaned up video track for uid:', uid);
+        } catch (error) {
+          console.error('[STREAM-PLAYER] Error cleaning up video track:', error);
+        }
+      }
     };
-  }, []);
+  }, [videoTrack, uid]);
+
+  // Initialize or update video track
+  useEffect(() => {
+    const initVideo = async () => {
+      if (!videoTrack || !containerRef.current) return;
+
+      const shouldPlay = isScreenShare || !isLocalUser || (isLocalUser && isCameraEnabled);
+      if (!shouldPlay) return;
+
+      try {
+        // Clear existing content
+        while (containerRef.current.firstChild) {
+          containerRef.current.removeChild(containerRef.current.firstChild);
+        }
+
+        // Play new track
+        await videoTrack.play(containerRef.current, {
+          fit: isScreenShare ? 'contain' : 'cover',
+          ...options
+        });
+
+        console.log('[STREAM-PLAYER] Successfully playing video for uid:', uid);
+      } catch (error) {
+        console.error('[STREAM-PLAYER] Error playing video:', error);
+      }
+    };
+
+    initVideo();
+  }, [videoTrack, isLocalUser, isCameraEnabled, isScreenShare, options, uid]);
 
   const shouldShowVideo = isScreenShare ?
     !!videoTrack :
-    videoTrack && ((isLocalUser && isCameraEnabled) || !isLocalUser);
+    videoTrack && (!isLocalUser || (isLocalUser && isCameraEnabled));
+
+  console.log('[STREAM-PLAYER] Render state:', {
+    uid,
+    shouldShowVideo,
+    hasTrack: !!videoTrack,
+    isLocalUser,
+    cameraEnabled: isCameraEnabled
+  });
 
   return (
     <div className="relative w-full h-full">
