@@ -72,14 +72,12 @@ const LiveStreamInterface = () => {
   }, [remoteParticipants]);
 
   const handleAllow = (requesterId: string) => {
-    console.log('Allowing user:', requesterId);
     setJoinRequests((requests: any) =>
       requests.filter((request: any) => request.id !== requesterId)
     );
   };
 
   const handleDeny = (requesterId: string) => {
-    console.log('Denying user:', requesterId);
     setJoinRequests((requests: any) =>
       requests.filter((request: any) => request.id !== requesterId)
     );

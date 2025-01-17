@@ -34,7 +34,6 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
       if (videoTrack) {
         try {
           videoTrack.stop();
-          console.log('[STREAM-PLAYER] Cleaned up video track for uid:', uid);
         } catch (error) {
           console.error('[STREAM-PLAYER] Error cleaning up video track:', error);
         }
@@ -62,7 +61,6 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
           ...options
         });
 
-        console.log('[STREAM-PLAYER] Successfully playing video for uid:', uid);
       } catch (error) {
         console.error('[STREAM-PLAYER] Error playing video:', error);
       }
@@ -74,14 +72,6 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
   const shouldShowVideo = isScreenShare ?
     !!videoTrack :
     videoTrack && (!isLocalUser || (isLocalUser && isCameraEnabled));
-
-  console.log('[STREAM-PLAYER] Render state:', {
-    uid,
-    shouldShowVideo,
-    hasTrack: !!videoTrack,
-    isLocalUser,
-    cameraEnabled: isCameraEnabled
-  });
 
   return (
     <div className="relative w-full h-full">

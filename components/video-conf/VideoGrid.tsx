@@ -12,30 +12,10 @@ export function ParticipantVideo({ participant, customClasses = '' }: any) {
     meetingConfig
   } = useVideoConferencing();
 
-  console.log('[PARTICIPANT-VIDEO] Rendering participant:', {
-    uid: participant.uid,
-    isLocal: participant.isLocal,
-    hasVideoTrack: !!participant.videoTrack,
-    hasAudioTrack: !!participant.audioTrack,
-    videoEnabled: participant.videoEnabled,
-    audioEnabled: participant.audioEnabled
-  });
-
-  // Enhanced video state logic
   const videoState = participant.isLocal ?
     (isCameraEnabled && !!participant.videoTrack) :
     (participant.videoEnabled !== false && !!participant.videoTrack);
 
-  console.log('[PARTICIPANT-VIDEO] Video state calculation:', {
-    uid: participant.uid,
-    isLocal: participant.isLocal,
-    videoState,
-    isCameraEnabled,
-    videoEnabled: participant.videoEnabled,
-    hasTrack: !!participant.videoTrack
-  });
-
-  // Enhanced audio state logic
   const audioState = participant.isLocal ?
     (isMicrophoneEnabled && !!participant.audioTrack) :
     (participant.audioEnabled !== false && !!participant.audioTrack);
@@ -201,15 +181,10 @@ export function VideoGrid({
   } = useVideoConferencing();
 
   const { participants } = useMemo(() => {
-    console.log('[VIDEO-GRID] Mapping participants:', {
-      localUser,
-      remoteParticipants: Object.keys(remoteParticipants || {})
-    });
 
     const validRemoteParticipants = Object.entries(remoteParticipants || {})
       .map(([uid, user]: any) => {
         if (uid === String(meetingConfig?.uid)) {
-          console.log('[VIDEO-GRID] Skipping local user from remote participants:', uid);
           return null;
         }
 

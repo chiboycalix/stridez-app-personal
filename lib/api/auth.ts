@@ -11,4 +11,17 @@ export const AUTH_API = {
       ...data,
     });
   },
+  validateOTP: async ({ token }: { token: string }) => {
+    console.log(token, "calix");
+    return apiClient.post("/auth/validate-otp", {
+      token,
+      triggerEvent: "account-creation",
+    });
+  },
+  resendOTP: async (email: string) => {
+    return apiClient.post("/auth/send-otp", {
+      email: email,
+      triggerEvent: "account-creation",
+    });
+  },
 };

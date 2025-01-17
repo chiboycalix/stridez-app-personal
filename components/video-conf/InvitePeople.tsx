@@ -28,7 +28,6 @@ const InvitePeopleTab = () => {
 
   const userId = getCurrentUser()?.id;
 
-  console.log("roomId", roomId);
 
   // Fetch Data for Followers and Followings
   const fetchFollowings = async () => {
@@ -36,7 +35,6 @@ const InvitePeopleTab = () => {
       const response = await axios.get(
         `${baseUrl}/users/${userId}/followings?page=1&limit=20`
       );
-      console.log(response);
       setFollowings(response?.data?.data?.followings);
     } catch (error) {
       console.error("Error fetching followings:", error);
@@ -48,7 +46,6 @@ const InvitePeopleTab = () => {
       const response = await axios.get(
         `${baseUrl}/users/${userId}/followers?page=1&limit=20`
       );
-      console.log(response);
       setFollowers(response?.data?.data?.followers);
     } catch (error) {
       console.error("Error fetching followers:", error);
@@ -70,7 +67,6 @@ const InvitePeopleTab = () => {
           roomCode: roomId,
         }),
       });
-      console.log(response);
       if (response.status === 200) {
         alert("Invites sent successfully");
         setSelectedUsers([]);

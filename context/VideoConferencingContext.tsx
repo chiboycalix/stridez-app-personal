@@ -91,6 +91,12 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     isLocal: boolean;
   } | null>(null);
 
+  AgoraRTC.setLogLevel(4);
+
+  AgoraRTC.disableLogUpload();
+
+  AgoraRTC.removeAllListeners();
+
   const [meetingConfig, setMeetingConfig] = useState<Options>({
     channel: "",
     appid: "d9b1d4e54b9e4a01aac1de9833d83752",
@@ -187,7 +193,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
   const handleMeetingHostAndCohost = useCallback(() => {
     if (meetingRoomData) {
-      console.log("meeting room data", meetingRoomData);
 
       const isHost = meetingRoomData?.room?.roomSubscribers?.some(
         (user: { isOwner: boolean }) => user.isOwner
@@ -199,9 +204,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
       setUserIsHost(isHost);
       setUserIsCoHost(isCoHost);
-
-      console.log("user is host", isHost);
-      console.log("user is co-host", isCoHost);
     }
   }, [meetingRoomData]);
 
@@ -220,7 +222,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   const handleShareScreen = async () => {
     try {
       await joinRtcScreenShare();
-      // setIsSharingScreen(true)
       if (rtcScreenShareClient) {
         const screenTracks = await AgoraRTC.createScreenVideoTrack(
           {
@@ -237,7 +238,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
           screenTracks instanceof Array ? screenTracks[1] : null;
 
         if (!screenVideoTrack) {
-          console.log("Failed to create screen video track.");
           return;
         }
 
@@ -280,7 +280,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
   const handleEndScreenShare = async (action: string, uid: number) => {
     await handleScreenTrackEnd();
-
     if (rtmChannel) {
       await rtmChannel.sendMessage({
         text: JSON.stringify({
@@ -327,13 +326,10 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         codec: "vp8",
       });
 
-      // Set up all event handlers before joining
       rtcScreenShareClient.on("user-left", handleScreenShareUserLeft);
       rtcScreenShareClient.on("user-published", handleUserPublishedScreen);
       rtcScreenShareClient.on("user-unpublished", handleUserUnpublishedScreen);
-      rtcScreenShareClient.on("connection-state-change", (curState, prevState) => {
-        console.log(`Screen share client connection state changed from ${prevState} to ${curState}`);
-      });
+      rtcScreenShareClient.on("connection-state-change", (curState, prevState) => { });
 
       const mode = rtcScreenShareOptions?.proxyMode ?? 0;
       if (mode !== 0 && !isNaN(parseInt(mode))) {
@@ -357,7 +353,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
             rtcScreenShareOptions.rtcToken || null,
             sanitizedUid
           );
-          console.log('Screen share client joined successfully');
         }
       } catch (error) {
         console.error('Error joining screen share client:', error);
@@ -368,16 +363,12 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
   const handleUserPublishedScreen = async (user: any, mediaType: "audio" | "video") => {
     try {
-      // Verify the user has the published media type
       if ((mediaType === 'video' && !user.hasVideo) ||
         (mediaType === 'audio' && !user.hasAudio)) {
-        console.log(`User ${user.uid} published ${mediaType} but track is not available`);
         return;
       }
 
-      // For video, verify it's a screen share track before subscribing
       if (mediaType === 'video' && user.videoTrack && !user.videoTrack.isScreenTrack) {
-        console.log(`User ${user.uid} published regular video track, not screen share`);
         return;
       }
 
@@ -389,20 +380,15 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
   const rtcSubscribeScreen = async (user: any, mediaType: "audio" | "video") => {
     try {
-      // Check if the user has the media type before attempting to subscribe
       if ((mediaType === 'video' && !user.hasVideo) ||
         (mediaType === 'audio' && !user.hasAudio)) {
-        console.log(`User ${user.uid} doesn't have ${mediaType} track available`);
         return;
       }
 
-      // Verify if the client exists before subscribing
       if (!rtcScreenShareClient) {
-        console.log('Screen share client not initialized');
         return;
       }
 
-      // Check if we're already subscribed to this track
       const subscribedUsers = rtcScreenShareClient.remoteUsers;
       const isAlreadySubscribed = subscribedUsers.some(
         (subscribedUser) => subscribedUser.uid === user.uid &&
@@ -411,7 +397,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       );
 
       if (isAlreadySubscribed) {
-        console.log(`Already subscribed to ${mediaType} track of user ${user.uid}`);
         return;
       }
 
@@ -502,7 +487,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
   const releaseMediaResources = async () => {
     try {
-      // First cleanup Agora tracks
       if (localUserTrack?.videoTrack) {
         localUserTrack.videoTrack.stop();
         await localUserTrack.videoTrack.close();
@@ -517,8 +501,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       }
 
       setIsSharingScreen(null);
-
-      // Then explicitly stop all media tracks using browser API
       const streams = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       streams.getTracks().forEach(track => {
         track.stop();
@@ -549,25 +531,17 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     if (localUserTrack && localUserTrack.audioTrack) {
       try {
         const newState = !isMicrophoneEnabled;
-
-        // First, enable/disable the local track
         await localUserTrack.audioTrack.setEnabled(newState);
-
-        // If we're in a call, handle publishing/unpublishing
         if (hasJoinedMeeting && rtcClient) {
           if (newState) {
-            // If enabling audio, publish the track if it's not already published
             const isPublished = rtcClient.localTracks.includes(localUserTrack.audioTrack);
             if (!isPublished) {
               await rtcClient.publish([localUserTrack.audioTrack]);
             }
           } else {
-            // If disabling audio, unpublish the track
             await rtcClient.unpublish([localUserTrack.audioTrack]);
           }
         }
-
-        // Ensure remote audio keeps playing
         ensureRemoteAudioPlaying();
 
         if (rtmChannel) {
@@ -581,12 +555,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         }
 
         setIsMicrophoneEnabled(newState);
-
-        console.log('[TOGGLE-MICROPHONE] Audio state updated:', {
-          enabled: newState,
-          hasJoinedMeeting,
-          trackEnabled: localUserTrack.audioTrack.enabled
-        });
       } catch (error) {
         console.error("Error toggling audio:", error);
       }
@@ -597,20 +565,14 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     try {
       if (localUserTrack?.videoTrack) {
         const newState = !isCameraEnabled;
-
-        // First, enable/disable the local track
         await localUserTrack.videoTrack.setEnabled(newState);
-
-        // If we're in a call, handle publishing/unpublishing
         if (hasJoinedMeeting && rtcClient) {
           if (newState) {
-            // If enabling video, publish the track if it's not already published
             const isPublished = rtcClient.localTracks.includes(localUserTrack.videoTrack);
             if (!isPublished) {
               await rtcClient.publish([localUserTrack.videoTrack]);
             }
           } else {
-            // If disabling video, unpublish the track
             await rtcClient.unpublish([localUserTrack.videoTrack]);
           }
         }
@@ -628,15 +590,9 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         }
 
         setIsCameraEnabled(newState);
-
-        console.log('[TOGGLE-CAMERA] Video state updated:', {
-          enabled: newState,
-          hasJoinedMeeting,
-          trackEnabled: localUserTrack.videoTrack.enabled
-        });
       }
     } catch (error) {
-      console.error("Error toggling video:", error);
+      console.log("Error toggling video:", error);
     }
   };
 
@@ -680,16 +636,12 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   const onParticipantJoined = async (memberId: string) => {
     try {
       if (memberId === String(meetingConfig.uid)) {
-        console.log('Skipping local user join event');
         return;
       }
 
       if (remoteParticipants[memberId]) {
-        console.log(`Participant ${memberId} already exists, skipping`);
         return;
       }
-
-      console.log(`Handling participant join: ${memberId}`);
 
       const attributes = await rtmClient.getUserAttributesByKeys(memberId, [
         "name",
@@ -724,7 +676,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         await broadcastCurrentMediaStates();
       }
       fetchMeetingRoomData();
-      console.log(`Participant joined: ${participantData.name} (${participantData.rtcUid})`);
     } catch (error) {
       console.log("Error handling participant join:", error);
     }
@@ -840,7 +791,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
                     audioTrack: prevUsers[uid]?.audioTrack
                   },
                 };
-                console.log('New remote participants state:', newState);
                 return newState;
               });
               break;
@@ -875,25 +825,14 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     }
   };
 
-  // Fix for onMediaStreamPublished
   const onMediaStreamPublished = async (user: any, mediaType: "audio" | "video") => {
     try {
-      console.log(`[STREAM-PUBLISHED] User ${user.uid} published ${mediaType}`, {
-        hasVideo: user.hasVideo,
-        hasAudio: user.hasAudio,
-        videoTrack: !!user.videoTrack,
-        audioTrack: !!user.audioTrack
-      });
-
-      // Subscribe to the track first
       await rtcClient.subscribe(user, mediaType);
       const uid = String(user.uid);
 
       if (mediaType === "video") {
-        // Ensure we're not dealing with a screen share track
         if (!user.videoTrack?.isScreenTrack) {
           setRemoteParticipants((prevUsers) => {
-            // Important: Preserve existing participant data
             const existingUser = prevUsers[uid] || {
               name: "",
               rtcUid: uid,
@@ -910,8 +849,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
                 hasVideo: true
               }
             };
-
-            console.log('[VIDEO-STATE] Updated state for user', uid, newState[uid]);
             return newState;
           });
         }
@@ -950,7 +887,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     }
   };
 
-  // Also add this helper function to handle remote audio recovery
   const ensureRemoteAudioPlaying = () => {
     rtcClient?.remoteUsers.forEach(user => {
       if (user.audioTrack) {
@@ -999,7 +935,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
   const publishLocalMediaTracks = async () => {
     if (!rtcClient) {
-      console.log("RTC Client not initialized");
       return;
     }
 
@@ -1113,13 +1048,10 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         codec: "vp8",
       });
 
-      // Set up event handlers before joining
       rtcClient.on("user-published", onMediaStreamPublished);
       rtcClient.on("user-unpublished", onMediaStreamUnpublished);
       rtcClient.on("user-left", onParticipantLeft);
-      rtcClient.on("user-joined", (user) => {
-        console.log("User joined:", user.uid);
-      });
+      rtcClient.on("user-joined", (user) => { });
 
       await rtcClient.setClientRole("host");
       rtcClient.enableAudioVolumeIndicator();
@@ -1135,13 +1067,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         rtcClient.setClientRole(meetingConfig.role);
       }
 
-      // Join the channel
-      console.log('Joining channel with config:', {
-        appid: meetingConfig.appid,
-        channel: meetingConfig.channel,
-        uid: meetingConfig.uid
-      });
-
       meetingConfig.uid = await rtcClient.join(
         meetingConfig.appid || "",
         meetingConfig.channel || "",
@@ -1149,14 +1074,9 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         meetingConfig.uid || null
       );
 
-      console.log('Successfully joined channel with UID:', meetingConfig.uid);
-
-      // Initialize messaging after successful join
       await initializeRealtimeMessaging(username!);
 
-      // Subscribe to existing users
       const remoteUsers = rtcClient.remoteUsers;
-      console.log('Found existing remote users:', remoteUsers.length);
 
       for (const user of remoteUsers) {
         if (user.hasVideo) {
@@ -1197,8 +1117,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
           await localUserTrack.audioTrack.setEnabled(true);
           tracksToPublish.push(localUserTrack.audioTrack);
         }
-
-        // Only publish video track if camera is enabled
         if (localUserTrack.videoTrack && isCameraEnabled) {
           await localUserTrack.videoTrack.setEnabled(true);
           tracksToPublish.push(localUserTrack.videoTrack);
@@ -1206,16 +1124,11 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
         if (tracksToPublish.length > 0) {
           await rtcClient.publish(tracksToPublish);
-          console.log('Published local tracks:', {
-            audioEnabled: isMicrophoneEnabled,
-            videoEnabled: isCameraEnabled
-          });
         }
 
         await broadcastCurrentMediaStates();
       }
 
-      // Ensure remote audio is playing after joining
       ensureRemoteAudioPlaying();
 
       AgoraRTC.setLogLevel(1);
@@ -1226,6 +1139,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       console.log("Error joining meeting:", error);
     }
   };
+
   const subscribeToParticipantMedia = async (user: any, mediaType: "audio" | "video") => {
     try {
       await rtcClient.subscribe(user, mediaType);
@@ -1296,9 +1210,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     for (const user of remoteUsers) {
       const uid = String(user.uid);
 
-      // Check if we need to subscribe to video
       if (user.hasVideo && (!currentParticipants[uid]?.videoTrack || !currentParticipants[uid]?.hasVideo)) {
-        console.log('Recovering video subscription for user:', uid);
         try {
           await rtcClient.subscribe(user, 'video');
           setRemoteParticipants(prev => ({
@@ -1315,9 +1227,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         }
       }
 
-      // Check if we need to subscribe to audio
       if (user.hasAudio && (!currentParticipants[uid]?.audioTrack || !currentParticipants[uid]?.hasAudio)) {
-        console.log('Recovering audio subscription for user:', uid);
         try {
           await rtcClient.subscribe(user, 'audio');
           const audioTrack = user.audioTrack;
