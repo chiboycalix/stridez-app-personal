@@ -91,6 +91,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     uid: string;
     isLocal: boolean;
   } | null>(null);
+
   const [meetingConfig, setMeetingConfig] = useState<Options>({
     channel: "",
     appid: "d9b1d4e54b9e4a01aac1de9833d83752",
@@ -551,6 +552,14 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         const newState = !isMicrophoneEnabled;
         await localUserTrack.audioTrack.setEnabled(newState);
 
+        if (newState && !localUserTrack.audioTrack.isPublished) {
+          try {
+            await rtcClient?.publish([localUserTrack.audioTrack]);
+          } catch (error) {
+            console.log("Error publishing audio track:", error);
+          }
+        }
+
         if (rtmChannel) {
           await sendRateLimitedMessage({
             text: JSON.stringify({
@@ -567,7 +576,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       }
     }
   };
-
   const toggleCamera = async () => {
     try {
       if (localUserTrack?.videoTrack) {
@@ -1101,7 +1109,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
           await broadcastCurrentMediaStates();
         }
       }
-
+      AgoraRTC.setLogLevel(1)
       setHasJoinedMeeting(true);
       setMeetingStage("hasJoinedMeeting");
       setMeetingConfig(meetingConfig);
