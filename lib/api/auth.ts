@@ -24,4 +24,9 @@ export const AUTH_API = {
       triggerEvent: "account-creation",
     });
   },
+  updateProfile: async (profileData: any) => {
+    return apiClient.put("/profiles", {
+      ...profileData,
+    });
+  },
 };

@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { SidebarProvider } from '@/context/SidebarContext';
 import { useAuth } from '@/context/AuthContext';
 import { shouldUseMainLayout } from '@/utils/path-utils';
+import ProfileCompletionManager from '../ProfileCompletionManager';
 
 export default function MainLayout({
   children,
@@ -40,9 +41,11 @@ export default function MainLayout({
         <div className="flex-1 lg:ml-64">
           <header className="fixed top-0 right-0 left-0 lg:left-64 z-30">
             <Navbar />
+
           </header>
           <main className="relative h-full mt-16 overflow-y-auto">
             <div className="p-6">
+              <ProfileCompletionManager />
               {children}
             </div>
           </main>

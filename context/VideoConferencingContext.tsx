@@ -91,11 +91,11 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     isLocal: boolean;
   } | null>(null);
 
-  AgoraRTC.setLogLevel(4);
+  useEffect(() => {
+    AgoraRTC.setLogLevel(4);
 
-  AgoraRTC.disableLogUpload();
-
-  AgoraRTC.removeAllListeners();
+    AgoraRTC.disableLogUpload();
+  }, []);
 
   const [meetingConfig, setMeetingConfig] = useState<Options>({
     channel: "",

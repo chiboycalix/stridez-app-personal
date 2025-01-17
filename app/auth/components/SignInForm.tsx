@@ -12,6 +12,7 @@ import { COOKIE_OPTIONS, useAuth } from "@/context/AuthContext";
 import { AUTH_API } from "@/lib/api/";
 import { ROUTES } from "@/constants/routes";
 import { Button } from "@/components/ui/button";
+import { STATUS_CODES } from "@/constants/statusCodes";
 
 export default function SignInForm({
   passwordVisible,
@@ -35,7 +36,7 @@ export default function SignInForm({
         email: email,
         password: password,
       })) as any;
-      if (data.code === 200) {
+      if (data.code === STATUS_CODES.OK) {
         Cookies.set("accessToken", data.data.token, COOKIE_OPTIONS);
         setAuth(true, data.data, data.data.token);
         setAlert("Login Successful");

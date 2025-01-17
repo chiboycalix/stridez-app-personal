@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useAuth } from "@/context/AuthContext";
 import Socket from "../../../../components/Socket";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import Image from "next/image";
-import Cookies from "js-cookie";
+import { Button } from "@/components/ui/button";
+import { AUTH_API } from "@/lib/api";
+import { STATUS_CODES } from "@/constants/statusCodes";
+import Toastify from "@/components/Toastify";
 
 
 interface UserProfile {
@@ -27,23 +29,17 @@ const EditUserInputModal: React.FC<EditUserInputModalProps> = ({
   userProfile,
   onClose,
 }) => {
-  const { setAuth } = useAuth();
-
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  // const [error, setError] = useState(false);
-  // const [success, setSuccess] = useState(false);
   const [open, setOpen] = useState(true);
-
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
   const [username, setUsername] = useState<string>("");
   const [bio, setBio] = useState<string>("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-
+  const [alert, setAlert] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const baseUrl = process.env.NEXT_PUBLIC_BASEURL;
   const cloudinaryPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
   const cloudinaryCloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 
@@ -110,7 +106,6 @@ const EditUserInputModal: React.FC<EditUserInputModalProps> = ({
 
     try {
       let imageUrl = user?.profile.avatar;
-
       if (selectedImage) {
         imageUrl = await uploadImageToCloudinary(selectedImage);
       }
@@ -123,23 +118,13 @@ const EditUserInputModal: React.FC<EditUserInputModalProps> = ({
         bio,
       };
 
-      const response = await fetch(`${baseUrl}/profiles`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${Cookies.get("accessToken")}`,
-        },
-        body: JSON.stringify(updatedUserData),
-      });
-
-      if (!response.ok) {
-        console.log("Error updating user data");
+      const response = await AUTH_API.updateProfile(updatedUserData) as any
+      if (response.code !== STATUS_CODES.OK) {
         return;
       }
 
-      const updatedData = await response.json();
-      setAuth(true, updatedData.data);
-      // setSuccess(true);
+      fetchUser();
+      setAlert("Update was successful")
       setLoading(false);
       setOpen(false);
     } catch (error) {
@@ -149,6 +134,7 @@ const EditUserInputModal: React.FC<EditUserInputModalProps> = ({
 
   return (
     <AnimatePresence>
+      <Toastify message={alert} />
       {open && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -188,7 +174,7 @@ const EditUserInputModal: React.FC<EditUserInputModalProps> = ({
                   <Image
                     width={80}
                     height={80}
-                    src={imagePreview || user?.profile.avatar || ""}
+                    src={imagePreview || user?.profile.avatar || "/assets/avatar.svg"}
                     alt="Profile Preview"
                     className="w-20 h-20 rounded-full object-cover"
                   />
@@ -262,13 +248,13 @@ const EditUserInputModal: React.FC<EditUserInputModalProps> = ({
                 />
               </div>
 
-              <button
+              <Button
                 type="submit"
                 className="w-full py-2 bg-primary text-white rounded hover:bg-primary/85 focus:outline-none"
                 disabled={loading}
               >
                 {loading ? "Updating..." : "Save Changes"}
-              </button>
+              </Button>
             </form>
           </motion.div>
         </motion.div>
