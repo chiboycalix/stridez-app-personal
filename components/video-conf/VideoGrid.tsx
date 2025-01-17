@@ -1,26 +1,203 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import VideoMutedDisplay from './VideoMutedDisplay';
 import { Mic, MicOff } from 'lucide-react';
 import { useVideoConferencing } from "@/context/VideoConferencingContext";
+import { StreamPlayer } from './StreamPlayer';
 
-const VideoGrid = ({
-  localUser,
-  remoteParticipants,
-  StreamPlayer,
-  showControls = true,
-}: any) => {
+export function ParticipantVideo({ participant, customClasses = '' }: any) {
   const {
     isMicrophoneEnabled,
     isCameraEnabled,
     speakingParticipants,
+  } = useVideoConferencing();
+
+  const videoState = participant.isLocal ? isCameraEnabled :
+    (participant.videoEnabled !== false && participant.videoTrack);
+
+  const audioState = participant.isLocal ? isMicrophoneEnabled : participant.audioEnabled;
+  const displayName = participant.isLocal ? 'You' : (participant.name || `User ${participant.uid}`);
+  const isSpeaking = speakingParticipants[participant?.uid];
+
+  return (
+    <div
+      className={`relative h-full w-full rounded-lg overflow-hidden ${customClasses} 
+        ${isSpeaking ? 'border-2 border-green-500' : ''}`}
+    >
+      {!videoState ? (
+        <VideoMutedDisplay participant={participant} />
+      ) : (
+        <StreamPlayer
+          videoTrack={participant.videoTrack}
+          audioTrack={participant.audioTrack}
+          uid={participant.uid}
+        />
+      )}
+
+      <div className="absolute top-0 right-0 p-2 flex flex-col gap-2">
+        <div className="bg-black/50 p-1.5 rounded-lg">
+          {audioState ? (
+            <Mic size={16} className="text-white" />
+          ) : (
+            <MicOff size={16} className="text-red-500" />
+          )}
+        </div>
+      </div>
+
+      <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-sm">
+        {displayName}
+      </div>
+    </div>
+  );
+}
+
+
+export function RegularGrid({ participants }: any) {
+  const count = participants.length;
+
+  if (count === 1) {
+    return (
+      <div className="h-full w-full flex items-center justify-center p-2 sm:p-4">
+        <div className="w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px]">
+          <ParticipantVideo participant={participants[0]} />
+        </div>
+      </div>
+    );
+  }
+
+  if (count === 2) {
+    return (
+      <div className="h-full w-full flex items-center justify-center p-2 sm:p-4">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full">
+          {participants.map((participant: any) => (
+            <div key={participant.uid} className="w-full sm:w-1/2 h-[250px] sm:h-[350px] md:h-[400px] lg:h-[500px]">
+              <ParticipantVideo participant={participant} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (count === 3) {
+    return (
+      <div className="h-full w-full flex items-center justify-center p-2 sm:p-4">
+        <div className="flex flex-col gap-2 sm:gap-4 w-full">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+            {participants.slice(0, 2).map((participant: any) => (
+              <div key={participant.uid} className="w-full sm:w-1/2 h-[200px] sm:h-[300px] md:h-[350px]">
+                <ParticipantVideo participant={participant} />
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-center">
+            <div className="w-full sm:w-1/2 h-[200px] sm:h-[300px] md:h-[350px]">
+              <ParticipantVideo participant={participants[2]} />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (count === 4) {
+    return (
+      <div className="h-full w-full flex items-center justify-center p-2 sm:p-4">
+        <div className="flex flex-col gap-2 sm:gap-4 w-full">
+          {[0, 2].map((startIndex) => (
+            <div key={startIndex} className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+              {participants.slice(startIndex, startIndex + 2).map((participant: any) => (
+                <div key={participant.uid} className="w-full sm:w-1/2 h-[200px] sm:h-[250px] md:h-[300px]">
+                  <ParticipantVideo participant={participant} />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full w-full p-2 sm:p-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
+        {participants.map((participant: any) => (
+          <div key={participant.uid} className="h-[200px] sm:h-[250px] md:h-[300px]">
+            <ParticipantVideo participant={participant} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function ScreenShareView({ remoteParticipants }: any) {
+  const { screenTrack, screenSharingUser } = useVideoConferencing();
+
+  if (!screenSharingUser) return null;
+
+  if (screenSharingUser.isLocal) {
+    return (
+      <div className="w-full lg:basis-9/12 min-h-[300px] sm:min-h-[400px] bg-black">
+        <div className="relative h-full w-full">
+          <StreamPlayer
+            videoTrack={screenTrack?.screenVideoTrack}
+            audioTrack={screenTrack?.screenAudioTrack}
+            isScreenShare={true}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const sharingParticipant = remoteParticipants[screenSharingUser.uid];
+  if (!sharingParticipant) return null;
+
+  return (
+    <div className="w-full lg:basis-9/12 min-h-[300px] sm:min-h-[400px] bg-black">
+      <div className="relative h-full w-full">
+        <StreamPlayer
+          videoTrack={sharingParticipant.screenVideoTrack}
+          audioTrack={sharingParticipant.screenAudioTrack}
+          isScreenShare={true}
+        />
+        <div className="absolute top-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-sm">
+          {sharingParticipant.isLocal ? 'Your' : `${sharingParticipant.name}'s`} screen
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ParticipantsColumn({ participants }: any) {
+  return (
+    <div className="w-full lg:basis-3/12 overflow-x-auto lg:overflow-y-auto">
+      <div className="flex lg:flex-col gap-2 p-2 min-h-[150px] lg:h-full">
+        <div className="flex lg:flex-col gap-2 min-w-max lg:min-w-0">
+          {participants.map((participant: any) => (
+            <div key={participant.uid}
+              className="w-[200px] lg:w-full h-[150px] lg:h-40 flex-shrink-0">
+              <ParticipantVideo participant={participant} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function VideoGrid({
+  localUser,
+  remoteParticipants,
+  StreamPlayer,
+  showControls = true,
+}: any) {
+  const {
     userIsHost,
     meetingRoomData,
     isSharingScreen,
-    screenTrack,
-    screenSharingUser
   } = useVideoConferencing();
 
-  const prepareParticipantsList = () => {
+  const { participants } = useMemo(() => {
     const validRemoteParticipants = Object.entries(remoteParticipants || {})
       .map(([uid, user]: any) => {
         const isHost = meetingRoomData?.room?.roomSubscribers?.some(
@@ -34,225 +211,26 @@ const VideoGrid = ({
         };
       });
 
-    const allParticipants = [
-      { ...localUser, isLocal: true, isHost: userIsHost },
-      ...validRemoteParticipants
-    ];
-
     return {
-      participants: allParticipants.filter(p => p !== null && p !== undefined)
+      participants: [
+        { ...localUser, isLocal: true, isHost: userIsHost },
+        ...validRemoteParticipants
+      ].filter(p => p !== null && p !== undefined)
     };
-  };
+  }, [localUser, remoteParticipants, userIsHost, meetingRoomData]);
 
-  const getVideoState = (participant: any) => {
-    if (participant.isLocal) {
-      return isCameraEnabled;
-    }
-    return participant.videoEnabled !== false && participant.videoTrack;
-  };
-
-  const getAudioState = (participant: any) => {
-    if (participant.isLocal) {
-      return isMicrophoneEnabled;
-    }
-    return participant.audioEnabled;
-  };
-
-  const getParticipantDisplayName = (participant: any) => {
-    if (participant.isLocal) {
-      return 'You';
-    }
-    return participant.name || `User ${participant.uid}`;
-  };
-
-  const renderParticipantVideo = (participant: any, customClasses = '') => {
+  if (isSharingScreen) {
     return (
-      <div
-        className={`relative h-full w-full rounded-lg overflow-hidden ${customClasses} 
-          ${speakingParticipants[participant?.uid] ? 'border-2 border-green-500' : ''}`}
-      >
-        {!getVideoState(participant) ? (
-          <VideoMutedDisplay participant={participant} />
-        ) : (
-          <StreamPlayer
-            videoTrack={participant.videoTrack}
-            audioTrack={participant.audioTrack}
-            uid={participant.uid}
-          />
-        )}
-
-        {showControls && (
-          <>
-            <div className="absolute top-0 right-0 p-2 flex flex-col gap-2">
-              <div className="bg-black/50 p-1.5 rounded-lg">
-                {getAudioState(participant) ? (
-                  <Mic size={16} className="text-white" />
-                ) : (
-                  <MicOff size={16} className="text-red-500" />
-                )}
-              </div>
-            </div>
-
-            <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-sm">
-              {getParticipantDisplayName(participant)}
-            </div>
-          </>
-        )}
-      </div>
-    );
-  }
-
-  const isScreenShared = () => {
-    return isSharingScreen !== null;
-  };
-
-  const renderScreenShare = () => {
-    if (!screenSharingUser) return null;
-
-    if (screenSharingUser.isLocal) {
-      return (
-        <div className="basis-9/12 min-h-full bg-black">
-          <div className="relative h-full w-full">
-            <StreamPlayer
-              videoTrack={screenTrack?.screenVideoTrack}
-              audioTrack={screenTrack?.screenAudioTrack}
-              className="h-full"
-              isScreenShare={true}
-            />
-          </div>
-        </div>
-      );
-    }
-
-    const sharingParticipant = remoteParticipants[screenSharingUser.uid];
-    if (sharingParticipant) {
-      return (
-        <div className="basis-9/12 min-h-full bg-black">
-          <div className="relative h-full w-full">
-            <StreamPlayer
-              videoTrack={sharingParticipant.screenVideoTrack}
-              audioTrack={sharingParticipant.screenAudioTrack}
-              className="h-full"
-              isScreenShare={true}
-            />
-            <div className="absolute top-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-sm">
-              {getParticipantDisplayName(sharingParticipant)}&apos;s screen
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    return null;
-  };
-
-  const renderParticipantsColumn = (participants: any) => (
-    <div className="basis-3/12 min-h-full overflow-y-auto">
-      <div className="flex flex-col gap-2 p-2 h-full">
-        {participants.map((participant: any) => (
-          <div key={participant.uid} className="h-40 min-h-40 flex-shrink-0">
-            {renderParticipantVideo(participant)}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderRegularGrid = (participants: any) => {
-    const count = participants.length;
-
-    if (count === 1) {
-      return (
-        <div className="h-full w-full flex items-center justify-center py-4">
-          <div className="w-full h-full">
-            {renderParticipantVideo(participants[0])}
-          </div>
-        </div>
-      );
-    }
-
-    if (count === 2) {
-      return (
-        <div className="h-full w-full flex items-center justify-center py-4">
-          <div className="flex gap-4 w-full">
-            {participants.map((participant: any) => (
-              <div key={participant.uid} className="w-1/2 h-96">
-                {renderParticipantVideo(participant)}
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    if (count === 3) {
-      return (
-        <div className="h-full w-full flex items-center justify-center py-4">
-          <div className="flex flex-col gap-4 w-full">
-            <div className="flex gap-4">
-              {participants.slice(0, 2).map((participant: any) => (
-                <div key={participant.uid} className="w-1/2 h-80">
-                  {renderParticipantVideo(participant)}
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-center">
-              <div className="w-1/2 h-80">
-                {renderParticipantVideo(participants[2])}
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (count === 4) {
-      return (
-        <div className="h-full w-full flex items-center justify-center p-4">
-          <div className="flex flex-col gap-4 w-full">
-            {[0, 2].map((startIndex) => (
-              <div key={startIndex} className="flex gap-4">
-                {participants.slice(startIndex, startIndex + 2).map((participant: any) => (
-                  <div key={participant.uid} className="w-1/2 h-72">
-                    {renderParticipantVideo(participant)}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="h-full w-full p-4">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {participants.map((participant: any) => (
-            <div key={participant.uid} className="h-64">
-              {renderParticipantVideo(participant)}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const { participants } = prepareParticipantsList();
-
-  if (isScreenShared()) {
-    return (
-      <div className="h-full min-h-full w-full flex gap-2">
-        {renderScreenShare()}
-        {renderParticipantsColumn(participants)}
+      <div className="h-full w-full flex flex-col lg:flex-row gap-2">
+        <ScreenShareView remoteParticipants={remoteParticipants} />
+        <ParticipantsColumn participants={participants} />
       </div>
     );
   }
 
   return (
     <div className="h-full w-full">
-      {renderRegularGrid(participants)}
+      <RegularGrid participants={participants} />
     </div>
   );
-};
-
-export default VideoGrid;
+}

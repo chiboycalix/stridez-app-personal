@@ -25,59 +25,56 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
   isScreenShare = false
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<any>(null);
+  const playingStateRef = useRef<boolean>(false);
   const { isCameraEnabled, meetingConfig } = useVideoConferencing();
   const isLocalUser = uid === meetingConfig?.uid;
 
   useEffect(() => {
-    videoRef.current = videoTrack;
-    return () => {
-      videoRef.current = null;
-    };
-  }, [videoTrack]);
-
-  useEffect(() => {
-    let isPlaying = false;
+    let isMounted = true;
     const currentContainer = containerRef.current;
 
     const initializeVideo = async () => {
-      if (!videoRef.current || !currentContainer) {
-        return;
-      }
+      if (!videoTrack || !currentContainer || !isMounted) return;
 
       const shouldPlay = isScreenShare || (isLocalUser && isCameraEnabled) || !isLocalUser;
 
       try {
-        if (shouldPlay && !isPlaying) {
+        if (shouldPlay && !playingStateRef.current) {
           if (currentContainer.childNodes.length === 0) {
-            await videoRef.current.play(currentContainer, {
+            await videoTrack.play(currentContainer, {
               fit: isScreenShare ? 'contain' : 'cover',
               ...options
             });
-            isPlaying = true;
+            if (isMounted) {
+              playingStateRef.current = true;
+            }
           }
-        } else if (!shouldPlay && isPlaying) {
-          videoRef.current.stop();
-          if (currentContainer) {
+        } else if (!shouldPlay && playingStateRef.current) {
+          videoTrack.stop();
+          if (currentContainer && isMounted) {
             currentContainer.innerHTML = '';
+            playingStateRef.current = false;
           }
-          isPlaying = false;
         }
       } catch (error) {
         console.log(`Error managing video for uid ${uid}:`, error);
-        isPlaying = false;
+        if (isMounted) {
+          playingStateRef.current = false;
+        }
       }
     };
 
     initializeVideo();
 
     return () => {
-      if (videoRef.current && isPlaying) {
+      isMounted = false;
+      if (videoTrack && playingStateRef.current) {
         try {
-          videoRef.current.stop();
+          videoTrack.stop();
           if (currentContainer) {
             currentContainer.innerHTML = '';
           }
+          playingStateRef.current = false;
         } catch (error) {
           console.log('Error cleaning up video:', error);
         }
@@ -102,5 +99,3 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
     </div>
   );
 };
-
-export default StreamPlayer;

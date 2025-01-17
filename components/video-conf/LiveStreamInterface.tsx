@@ -7,7 +7,7 @@ import VolumeControlPopup from './VolumeControlPopup';
 import JoinRequestNotification from './JoinRequestNotification';
 import EndCallScreen from './EndCallScreen';
 import EmojiPopup from './EmojiPopup';
-import VideoGrid from './VideoGrid';
+import { VideoGrid } from './VideoGrid';
 import ChatAndParticipant from './ChatAndParticipant';
 import InvitePeopleTab from './InvitePeople';
 import { X, Mic, MoreVertical, Copy, Plus, StopCircleIcon, Dot, MicOff, Video, Share, MessageSquare, Menu, Users, Smile, SquareArrowOutUpRight, VideoOff, MonitorOff } from 'lucide-react';
