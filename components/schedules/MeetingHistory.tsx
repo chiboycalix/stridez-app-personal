@@ -75,7 +75,7 @@ const MeetingHistory: React.FC<MeetingHistoryProps> = ({ meetings }) => {
             <tr
               key={meeting.id}
               onClick={() => {
-                fetchMeetingAnalytics(meeting.roomCode);
+                fetchMeetingAnalytics(meeting?.roomCode);
                 setShowMeetingAnalytics(true);
               }}
               style={{ cursor: "pointer" }}
@@ -142,7 +142,7 @@ const MeetingHistory: React.FC<MeetingHistoryProps> = ({ meetings }) => {
                         <p className="text-sm font-medium text-gray-700">
                           Participants Count:{" "}
                           <span className="font-semibold text-gray-900">
-                            {analyticsData?.participantCount}
+                            {analyticsData?.room?.roomSubscribers?.length}
                           </span>
                         </p>
                         <p className="text-sm font-medium text-gray-700">
