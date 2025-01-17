@@ -3,7 +3,7 @@
 import Input from '@/components/ui/Input'
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Menu, Search, X } from 'lucide-react'
+import { AlignVerticalJustifyStart, Menu, Search, X } from 'lucide-react'
 import { useSidebar } from '@/context/SidebarContext'
 import { useScroll } from '@/hooks/useScroll'
 import { useAuth } from '@/context/AuthContext'
@@ -127,7 +127,14 @@ const Header = () => {
                           sizes="(max-width: 640px) 40px, (max-width: 768px) 48px, 56px"
                           className="rounded-full border bg-center object-cover border-gray-200 cursor-pointer"
                           priority
-                        /> : null
+                        /> : <Image
+                          src={"/assets/avatar.svg"}
+                          alt="User Avatar"
+                          fill
+                          sizes="(max-width: 640px) 40px, (max-width: 768px) 48px, 56px"
+                          className="rounded-full border bg-center object-cover border-gray-200 cursor-pointer"
+                          priority
+                        />
                       }
 
                     </div>
