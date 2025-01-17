@@ -116,18 +116,21 @@ export function RegularGrid({ participants }: any) {
         </div>
       </div>
 
-      {/* Tablet/Desktop Layout (Grid) */}
-      <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-fr">
-        {participants.map((participant: any) => (
-          <div key={participant.uid} className="h-[250px] md:h-[300px]">
-            <ParticipantVideo participant={participant} />
+      {/* Tablet/Desktop Layout with Vertical Scroll after 6 participants */}
+      <div className="hidden sm:block h-full">
+        <div className={`h-full ${count > 6 ? 'overflow-y-auto' : ''}`}>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-[250px] md:auto-rows-[300px]">
+            {participants.map((participant: any) => (
+              <div key={participant.uid}>
+                <ParticipantVideo participant={participant} />
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
     </div>
   );
 }
-
 
 
 export function ScreenShareView({ remoteParticipants }: any) {
