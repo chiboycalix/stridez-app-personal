@@ -20,7 +20,7 @@ export default function SignInForm({
   toggleRememberPassword,
 }: any) {
   const router = useRouter();
-  const { setAuth } = useAuth();
+  const { setAuth, getCurrentUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -52,9 +52,12 @@ export default function SignInForm({
         setLoading(false);
       }
     } catch (error: any) {
-      console.log({ error }, "errorrrr")
       if (error.code === "API_ERR_INVALID_LOGIN") {
         setAlert(error.message);
+        return;
+      }
+      if (error.message === "Your account has not been verified. Check email for otp") {
+        router.push(`${ROUTES.VALIDATE_OTP(email)}`);
         return;
       }
       setAlert("An error occurred while signing in. Please try again later.");
