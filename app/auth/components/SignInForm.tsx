@@ -3,7 +3,6 @@ import SocialButtons from "@/components/SocialButtons";
 import Input from "@/components/ui/Input";
 import Spinner from "@/components/Spinner";
 import Cookies from "js-cookie";
-import Toastify from "@/components/Toastify";
 import { useState } from "react";
 import { LockIcon, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -13,19 +12,15 @@ import { AUTH_API } from "@/lib/api/";
 import { ROUTES } from "@/constants/routes";
 import { Button } from "@/components/ui/button";
 import { STATUS_CODES } from "@/constants/statusCodes";
+import { useToast } from "@/context/ToastContext";
 
-export default function SignInForm({
-  passwordVisible,
-  togglePasswordVisibility,
-  rememberPassword,
-  toggleRememberPassword,
-}: any) {
+export default function SignInForm() {
   const router = useRouter();
-  const { setAuth, getCurrentUser } = useAuth();
+  const { setAuth } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [alert, setAlert] = useState("");
+  const { showToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     setLoading(true);
@@ -39,29 +34,42 @@ export default function SignInForm({
       if (data.code === STATUS_CODES.OK) {
         Cookies.set("accessToken", data.data.token, COOKIE_OPTIONS);
         setAuth(true, data.data, data.data.token);
-        setAlert("Login Successful");
+        showToast(
+          'success',
+          'Login Successful',
+          'Anyone with a link can now view this file.'
+        );
         if (!data.data.profileSetupCompleted) {
           router.push(`${ROUTES.PROFILE(data?.data?.id)}`);
           return;
         }
         router.push(ROUTES.HOME);
       } else {
-        setAlert(
-          String(data.data.message) ||
-          "Invalid email or password. Please try again."
-        );
         setLoading(false);
       }
     } catch (error: any) {
       if (error.code === "API_ERR_INVALID_LOGIN") {
-        setAlert(error.message);
+        showToast(
+          'error',
+          error.message,
+          'Please check you email and password'
+        );
         return;
       }
       if (error.message === "Your account has not been verified. Check email for otp") {
         router.push(`${ROUTES.VALIDATE_OTP(email)}`);
+        showToast(
+          'error',
+          'Enter your OTP',
+          'Your account has not been verified. Check email for otp'
+        );
         return;
       }
-      setAlert("An error occurred while signing in. Please try again later.");
+      showToast(
+        'error',
+        'Internal Server Error',
+        'Something went wrong. Please try again later'
+      );
     } finally {
       setLoading(false);
     }
@@ -77,7 +85,6 @@ export default function SignInForm({
 
   return (
     <div className="space-y-6">
-      <Toastify message={alert} onClose={() => setAlert('')} />
       <div className="">
         <SocialButtons />
         <OrSeparator />
