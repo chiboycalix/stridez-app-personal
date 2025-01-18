@@ -10,14 +10,14 @@ import EmojiPopup from './EmojiPopup';
 import { VideoGrid } from './VideoGrid';
 import ChatAndParticipant from './ChatAndParticipant';
 import InvitePeopleTab from './InvitePeople';
-import { X, Mic, MoreVertical, Copy, Plus, StopCircleIcon, Dot, MicOff, Video, Share, MessageSquare, Menu, Users, Smile, SquareArrowOutUpRight, VideoOff, MonitorOff } from 'lucide-react';
+import { X, Mic, MoreVertical, Copy, Plus, MicOff, Video, Share, MessageSquare, Menu, Users, Smile, SquareArrowOutUpRight, VideoOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AnimatePresence } from 'framer-motion';
 import { useVideoConferencing } from '@/context/VideoConferencingContext';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { generalHelpers } from '@/helpers';
-import { StreamPlayer } from './StreamPlayer';
 import { Button } from '@/components/ui/button';
+import { ROUTES } from '@/constants/routes';
 
 type JoinRequest = {
   id: string;
@@ -47,10 +47,11 @@ const LiveStreamInterface = () => {
     meetingConfig,
     handleEndScreenShare,
     handleShareScreen,
-    isSharingScreen
+    isSharingScreen,
+    leaveCall,
+    channelName
   } = useVideoConferencing();
-
-
+  const router = useRouter()
   const totalParticipants = Object.keys(remoteParticipants || {}).length + 1;
 
   const searchParams = useSearchParams();
@@ -89,15 +90,12 @@ const LiveStreamInterface = () => {
     setShowVolumePopup(!showVolumePopup);
   };
 
-  const handleEndCall = () => {
+  const handleEndCall = async () => {
+    router.push(`${ROUTES.VIDEO_CONFERENCING.LEAVE_MEETING}?channelName=${channelName}`)
+    await leaveCall()
     setHasEndedCall(true);
     setShowInviteModal(false);
     setShowInvitePeople(false);
-  };
-
-  const handleRejoin = () => {
-    setHasEndedCall(false);
-    setShowInviteModal(true);
   };
 
   const handleOptionsClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -344,8 +342,8 @@ const LiveStreamInterface = () => {
                   onLeftClick={handleEndCall}
                   className="bg-red-600 text-white hover:bg-red-600"
                   iconClass="hover:bg-red-700 text-white"
-                  tooltip="End call"
-                  rightTooltip="End call options"
+                  tooltip="Leave meeting"
+                  rightTooltip="Leave meeting options"
                 />
               </div>
 

@@ -25,6 +25,7 @@ export const ROUTES = {
       `/video-conferencing/waiting-room/${channelName}`,
     SCHEDULE: "/video-conferencing/schedule",
     LIVE: "/video-conferencing/live",
+    LEAVE_MEETING: "/video-conferencing/leave-meeting",
   },
 
   MARKETPLACE: "/market-place",

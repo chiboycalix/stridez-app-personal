@@ -52,7 +52,8 @@ interface VideoConferencingContextContextType {
   userIsCoHost: boolean;
   meetingRoomData: any;
   screenTrack: any;
-  screenSharingUser: any
+  screenSharingUser: any;
+  leaveCall: () => Promise<void>;
 }
 
 let rtcClient: IAgoraRTCClient;
@@ -152,7 +153,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   const [meetingRoomData, setMeetingRoomData] = useState<any | null>(null);
   const [userIsHost, setUserIsHost] = useState(false);
   const [userIsCoHost, setUserIsCoHost] = useState(false);
-  const [isSharingScreen, setIsSharingScreen] = useState<string | null>(null); // Store uid of sharing user
+  const [isSharingScreen, setIsSharingScreen] = useState<string | null>(null);
   const [screenSharingUser, setScreenSharingUser] = useState<{
     uid: string;
     isLocal: boolean;
@@ -160,7 +161,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
   useEffect(() => {
     AgoraRTC.setLogLevel(4);
-
     AgoraRTC.disableLogUpload();
   }, []);
 
@@ -222,7 +222,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     });
   }, []);
 
-  // Use the new RTM message handler
   useRTMMessageHandler(
     rtmChannel,
     meetingConfig,
@@ -231,8 +230,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     setScreenShare,
     setSpeakingParticipants
   );
-
-
 
   const sendRateLimitedMessage = async (message: any) => {
     if (!rtmChannel) return;
@@ -248,8 +245,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     screenVideoTrack: ILocalVideoTrack | null;
     screenAudioTrack: ILocalAudioTrack | null;
   } | null>(null);
-
-
 
   const handleMediaTrackUpdate = useCallback(async (uid: string, mediaType: 'audio' | 'video', track: any, enabled: boolean) => {
     updateRemoteParticipant(uid, {
@@ -268,7 +263,23 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     remoteScreenShareParticipantsRef.current = remoteScreenShareParticipants;
   }, [remoteScreenShareParticipants]);
 
-  const fetchMeetingRoomData = async () => {
+  const handleMeetingHostAndCohost = useCallback(() => {
+    if (meetingRoomData) {
+
+      const isHost = meetingRoomData?.room?.roomSubscribers?.some(
+        (user: { isOwner: boolean }) => user.isOwner
+      );
+
+      const isCoHost = meetingRoomData?.room?.roomSubscribers?.some(
+        (user: { isCoHost: boolean }) => user.isCoHost
+      );
+
+      setUserIsHost(isHost);
+      setUserIsCoHost(isCoHost);
+    }
+  }, [meetingRoomData]);
+
+  const fetchMeetingRoomData = useCallback(async () => {
     try {
       const data = await agoraGetAppData(channelName);
       setMeetingRoomData(data.data);
@@ -276,7 +287,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     } catch (error) {
       console.log("Error fetching meeting room data:", error);
     }
-  };
+  }, [channelName, handleMeetingHostAndCohost]);
 
   useEffect(() => {
     if (channelName && username) {
@@ -313,23 +324,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       fetchAgoraData();
       fetchMeetingRoomData();
     }
-  }, [channelName, username]);
-
-  const handleMeetingHostAndCohost = useCallback(() => {
-    if (meetingRoomData) {
-
-      const isHost = meetingRoomData?.room?.roomSubscribers?.some(
-        (user: { isOwner: boolean }) => user.isOwner
-      );
-
-      const isCoHost = meetingRoomData?.room?.roomSubscribers?.some(
-        (user: { isCoHost: boolean }) => user.isCoHost
-      );
-
-      setUserIsHost(isHost);
-      setUserIsCoHost(isCoHost);
-    }
-  }, [meetingRoomData]);
+  }, [channelName, username, fetchMeetingRoomData]);
 
   useEffect(() => {
     handleMeetingHostAndCohost();
@@ -402,21 +397,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     }
   };
 
-  const handleEndScreenShare = async (action: string, uid: number) => {
-    await handleScreenTrackEnd();
-    if (rtmChannel) {
-      await rtmChannel.sendMessage({
-        text: JSON.stringify({
-          command: action,
-          uid,
-          type: 'screen-share-state',
-          isSharing: false
-        })
-      });
-    }
-  };
-
-  const handleScreenTrackEnd = async () => {
+  const handleScreenTrackEnd = useCallback(async () => {
     setIsSharingScreen(null);
     setScreenSharingUser(null);
     if (screenTrack?.screenVideoTrack) {
@@ -441,7 +422,21 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         })
       });
     }
-  };
+  }, [meetingConfig.uid, screenTrack?.screenAudioTrack, screenTrack?.screenVideoTrack]);
+
+  const handleEndScreenShare = useCallback(async (action: string, uid: number) => {
+    await handleScreenTrackEnd();
+    if (rtmChannel) {
+      await rtmChannel.sendMessage({
+        text: JSON.stringify({
+          command: action,
+          uid,
+          type: 'screen-share-state',
+          isSharing: false
+        })
+      });
+    }
+  }, [handleScreenTrackEnd]);
 
   const joinRtcScreenShare = async () => {
     if (!rtcScreenShareClient) {
@@ -609,7 +604,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     }
   };
 
-  const releaseMediaResources = async () => {
+  const releaseMediaResources = useCallback(async () => {
     try {
       if (localUserTrack?.videoTrack) {
         localUserTrack.videoTrack.stop();
@@ -649,7 +644,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     } catch (error) {
       console.log("Error cleaning up tracks:", error);
     }
-  };
+  }, [localUserTrack?.audioTrack, localUserTrack?.screenTrack, localUserTrack?.videoTrack]);
 
   const toggleMicrophone = async () => {
     if (localUserTrack && localUserTrack.audioTrack) {
@@ -733,7 +728,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     return () => rateLimiter.stopResetTimer();
   }, []);
 
-  const broadcastCurrentMediaStates = async () => {
+  const broadcastCurrentMediaStates = useCallback(async () => {
     if (!rtmChannel) return;
 
     await sendRateLimitedMessage({
@@ -755,9 +750,9 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         timestamp: Date.now()
       })
     });
-  };
+  }, [isCameraEnabled, isMicrophoneEnabled, localUserTrack?.videoTrack, meetingConfig.uid]);
 
-  const onParticipantJoined = async (memberId: string) => {
+  const onParticipantJoined = useCallback(async (memberId: string) => {
     try {
       if (memberId === String(meetingConfig.uid)) {
         return;
@@ -802,6 +797,105 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       fetchMeetingRoomData();
     } catch (error) {
       console.log("Error handling participant join:", error);
+    }
+  }, [username, meetingConfig.uid, remoteParticipants, broadcastCurrentMediaStates, fetchMeetingRoomData]);
+
+  const onMemberDisconnected = useCallback(async (memberId: string) => {
+    try {
+      // If it's the local user, ignore
+      if (memberId === String(meetingConfig.uid)) {
+        return;
+      }
+
+      // Clean up speaking state
+      setSpeakingParticipants(prev => {
+        const updated = { ...prev };
+        delete updated[memberId];
+        return updated;
+      });
+
+      // Clean up screen sharing if the leaving member was sharing
+      if (isSharingScreen === memberId) {
+        setIsSharingScreen(null);
+        setScreenSharingUser(null);
+      }
+
+      // Remove from remote participants
+      setRemoteParticipants(prev => {
+        const updated = { ...prev };
+
+        // If the participant had any tracks, close them
+        const participant = updated[memberId];
+        if (participant) {
+          if (participant.audioTrack) {
+            participant.audioTrack.stop();
+          }
+          if (participant.videoTrack) {
+            participant.videoTrack.stop();
+          }
+        }
+
+        delete updated[memberId];
+        return updated;
+      });
+
+      // Update the reference
+      remoteUsersRef.current = {
+        ...remoteUsersRef.current
+      };
+      delete remoteUsersRef.current[memberId];
+
+      // Fetch updated meeting room data to reflect new participant list
+      await fetchMeetingRoomData();
+
+    } catch (error) {
+      console.error("Error handling member disconnection:", error);
+    }
+  }, [meetingConfig.uid, isSharingScreen, fetchMeetingRoomData]);
+
+  const fetchActiveMeetingParticipants = async () => {
+    try {
+      const members = await rtmChannel.getMembers();
+      const participantsData: Record<string, RemoteParticipant> = {};
+
+      for (const memberId of members) {
+        if (memberId === String(meetingConfig.uid)) {
+          continue;
+        }
+
+        if (remoteParticipants[memberId]) {
+          continue;
+        }
+
+        const attributes = await rtmClient.getUserAttributesByKeys(memberId, [
+          "name",
+          "userRtcUid",
+        ]);
+
+        participantsData[memberId] = {
+          name: attributes.name || "Anonymous",
+          rtcUid: attributes.userRtcUid,
+          audioEnabled: false,
+          videoEnabled: false
+        };
+      }
+
+      setRemoteParticipants(prevParticipants => {
+        const newParticipants = { ...prevParticipants };
+        Object.entries(participantsData).forEach(([id, data]) => {
+          if (!newParticipants[id]) {
+            newParticipants[id] = data;
+          }
+        });
+        return newParticipants;
+      });
+
+      remoteUsersRef.current = {
+        ...remoteUsersRef.current,
+        ...participantsData,
+      };
+    } catch (error) {
+      console.log("Error fetching active participants:", error);
     }
   };
 
@@ -849,7 +943,14 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       console.error("Error in initializeRealtimeMessaging:", error);
       throw error;
     }
-  }, [meetingConfig.appid, meetingConfig.rtmToken, meetingConfig.channel, meetingConfig.uid, username]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    meetingConfig.appid,
+    meetingConfig.rtmToken,
+    meetingConfig.channel,
+    meetingConfig.uid,
+    onMemberDisconnected,
+  ]);
 
   const onMediaStreamPublished = useCallback(async (user: any, mediaType: "audio" | "video") => {
     try {
@@ -953,68 +1054,9 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     return cleanup;
   }, [hasJoinedMeeting, onMediaStreamPublished, onMediaStreamUnpublished, onParticipantLeft]);
 
-  // Reduced dependency array for remoteUsersRef sync
   useEffect(() => {
     remoteUsersRef.current = remoteParticipants;
   }, [remoteParticipants]);
-
-
-  const disconnectFromMessaging = async () => {
-    setIsSharingScreen(null);
-    setScreenSharingUser(null);
-    await rtmChannel.leave();
-    await rtmClient.logout();
-    (rtmChannel as any) = null;
-  };
-
-  const fetchActiveMeetingParticipants = async () => {
-    try {
-      const members = await rtmChannel.getMembers();
-      const participantsData: Record<string, RemoteParticipant> = {};
-
-      for (const memberId of members) {
-        if (memberId === String(meetingConfig.uid)) {
-          continue;
-        }
-
-        if (remoteParticipants[memberId]) {
-          continue;
-        }
-
-        const attributes = await rtmClient.getUserAttributesByKeys(memberId, [
-          "name",
-          "userRtcUid",
-        ]);
-
-        participantsData[memberId] = {
-          name: attributes.name || "Anonymous",
-          rtcUid: attributes.userRtcUid,
-          audioEnabled: false,
-          videoEnabled: false
-        };
-      }
-
-      setRemoteParticipants(prevParticipants => {
-        const newParticipants = { ...prevParticipants };
-        Object.entries(participantsData).forEach(([id, data]) => {
-          if (!newParticipants[id]) {
-            newParticipants[id] = data;
-          }
-        });
-        return newParticipants;
-      });
-
-      remoteUsersRef.current = {
-        ...remoteUsersRef.current,
-        ...participantsData,
-      };
-    } catch (error) {
-      console.log("Error fetching active participants:", error);
-    }
-  };
-
-  const onMemberDisconnected = async () => {
-  };
 
   const subscribeToExistingParticipants = async () => {
     if (!rtcClient) return;
@@ -1190,7 +1232,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     }
   };
 
-  const checkAndRecoverSubscriptions = async () => {
+  const checkAndRecoverSubscriptions = useCallback(async () => {
     if (!rtcClient) return;
 
     const remoteUsers = rtcClient.remoteUsers;
@@ -1238,14 +1280,70 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         }
       }
     }
-  };
+  }, [remoteParticipants]);
+
+  const leaveCall = useCallback(async () => {
+    try {
+      if (isSharingScreen === String(meetingConfig.uid)) {
+        await handleEndScreenShare('end-screen-share', meetingConfig.uid as number);
+      }
+
+      await releaseMediaResources();
+
+      if (rtmChannel) {
+        await rtmChannel.leave();
+        await rtmClient.logout();
+      }
+
+      if (rtcClient) {
+        await rtcClient.leave();
+        rtcClient.removeAllListeners();
+      }
+
+      if (rtcScreenShareClient) {
+        await rtcScreenShareClient.leave();
+        rtcScreenShareClient.removeAllListeners();
+      }
+
+      setHasJoinedMeeting(false);
+      setIsSharingScreen(null);
+      setScreenSharingUser(null);
+      setRemoteParticipants({});
+      setSpeakingParticipants({});
+      setMeetingStage("prepRoom");
+
+      rtmChannel = null as any;
+      rtmClient = null as any;
+      rtcClient = null as any;
+      rtcScreenShareClient = null as any;
+
+    } catch (error) {
+      console.error("Error leaving call:", error);
+    }
+  }, [
+    isSharingScreen,
+    meetingConfig.uid,
+    handleEndScreenShare,
+    releaseMediaResources
+  ]);
+
+  const disconnectFromMessaging = useCallback(async () => {
+    await leaveCall();
+  }, [leaveCall]);
+
+  useEffect(() => {
+    window.addEventListener("beforeunload", disconnectFromMessaging);
+    return () => {
+      window.removeEventListener("beforeunload", disconnectFromMessaging);
+    };
+  }, [disconnectFromMessaging]);
 
   useEffect(() => {
     if (hasJoinedMeeting) {
       const recoveryInterval = setInterval(checkAndRecoverSubscriptions, 5000);
       return () => clearInterval(recoveryInterval);
     }
-  }, [hasJoinedMeeting]);
+  }, [hasJoinedMeeting, checkAndRecoverSubscriptions]);
 
   useLayoutEffect(() => {
     if (videoRef.current !== null && localUserTrack && localUserTrack.videoTrack) {
@@ -1270,6 +1368,15 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       }
     };
   }, [localUserTrack]);
+
+  useEffect(() => {
+    return () => {
+      if (rtmChannel) {
+        rtmChannel.off("MemberLeft", onMemberDisconnected);
+        rtmChannel.off("MemberJoined", onParticipantJoined);
+      }
+    };
+  }, [onMemberDisconnected, onParticipantJoined]);
 
   return (
     <VideoConferencingContext.Provider
@@ -1307,6 +1414,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         screenTrack,
         isSharingScreen,
         screenSharingUser,
+        leaveCall
       }}>
       {children}
     </VideoConferencingContext.Provider>
