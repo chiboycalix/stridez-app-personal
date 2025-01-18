@@ -38,14 +38,11 @@ const FollowButton = ({ followedId }: FollowButtonProp) => {
   }, [followedId, baseUrl]);
 
   useEffect(() => {
-    if (getAuth()) {
-      checkFollowStatus();
-    } else {
-      router.push(ROUTES.SIGN_IN);
-    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    getAuth() && checkFollowStatus(); //could pose a loop problem
 
     //could pose a loop problem
-  }, [checkFollowStatus, getAuth, router]);
+  }, [checkFollowStatus, getAuth]);
 
   // Follow the user
   const handleFollow = async () => {
