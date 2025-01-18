@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { AUTH_API } from "@/lib/api";
 import { STATUS_CODES } from "@/constants/statusCodes";
 import Toastify from "@/components/Toastify";
-
+import { cloudinaryCloudName, cloudinaryUploadPreset } from "@/utils/constant";
 
 interface UserProfile {
   id: number;
@@ -38,10 +38,8 @@ const EditUserInputModal: React.FC<EditUserInputModalProps> = ({
   const [bio, setBio] = useState<string>("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [alert, setAlert] = useState("")
+  const [alert, setAlert] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const cloudinaryPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-  const cloudinaryCloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -83,7 +81,7 @@ const EditUserInputModal: React.FC<EditUserInputModalProps> = ({
   const uploadImageToCloudinary = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", cloudinaryPreset || "");
+    formData.append("upload_preset", cloudinaryUploadPreset || "");
     formData.append("cloud_name", cloudinaryCloudName || "");
     formData.append("folder", "Stridez/profiles");
 
@@ -118,13 +116,13 @@ const EditUserInputModal: React.FC<EditUserInputModalProps> = ({
         bio,
       };
 
-      const response = await AUTH_API.updateProfile(updatedUserData) as any
+      const response = (await AUTH_API.updateProfile(updatedUserData)) as any;
       if (response.code !== STATUS_CODES.OK) {
         return;
       }
 
       fetchUser();
-      setAlert("Update was successful")
+      setAlert("Update was successful");
       setLoading(false);
       setOpen(false);
     } catch (error) {
@@ -136,17 +134,9 @@ const EditUserInputModal: React.FC<EditUserInputModalProps> = ({
     <AnimatePresence>
       <Toastify message={alert} />
       {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black bg-opacity-50 flex justify-center items-center"
-          onClick={() => {
-            setOpen(false);
-            onClose?.();
-          }}
-        >
+      
           <motion.div
+            key={`user?.id + 1`}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
@@ -174,7 +164,11 @@ const EditUserInputModal: React.FC<EditUserInputModalProps> = ({
                   <Image
                     width={80}
                     height={80}
-                    src={imagePreview || user?.profile.avatar || "/assets/avatar.svg"}
+                    src={
+                      imagePreview ||
+                      user?.profile.avatar ||
+                      "/assets/avatar.svg"
+                    }
                     alt="Profile Preview"
                     className="w-20 h-20 rounded-full object-cover"
                   />
@@ -231,7 +225,10 @@ const EditUserInputModal: React.FC<EditUserInputModalProps> = ({
                 <input
                   type="text"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => {
+                    e.preventDefault();
+                    setUsername(e.target.value);
+                  }}
                   className="w-full px-3 py-2 border rounded focus:outline-none"
                 />
                 {username && <Socket username={username} />}
@@ -257,7 +254,6 @@ const EditUserInputModal: React.FC<EditUserInputModalProps> = ({
               </Button>
             </form>
           </motion.div>
-        </motion.div>
       )}
     </AnimatePresence>
   );

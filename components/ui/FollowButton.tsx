@@ -2,9 +2,10 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+import { ROUTES } from "@/constants/routes";
 
 type FollowButtonProp = {
-  followedId: number;
+  followedId: number | string;
 };
 
 const FollowButton = ({ followedId }: FollowButtonProp) => {
@@ -37,8 +38,14 @@ const FollowButton = ({ followedId }: FollowButtonProp) => {
   }, [followedId, baseUrl]);
 
   useEffect(() => {
-    checkFollowStatus();
-  }, [checkFollowStatus]);
+    if (getAuth()) {
+      checkFollowStatus();
+    } else {
+      router.push(ROUTES.SIGN_IN);
+    }
+
+    //could pose a loop problem
+  }, [checkFollowStatus, getAuth, router]);
 
   // Follow the user
   const handleFollow = async () => {
@@ -94,22 +101,23 @@ const FollowButton = ({ followedId }: FollowButtonProp) => {
         loading
           ? "Processing your request"
           : isFollowing === null
-            ? "Loading follow status"
-            : isFollowing
-              ? "Unfollow this user"
-              : "Follow this user"
+          ? "Loading follow status"
+          : isFollowing
+          ? "Unfollow this user"
+          : "Follow this user"
       }
       aria-pressed={isFollowing ?? undefined} // Fixed here
-      className={`bg-[#37169C] text-white px-4 py-2.5 text-sm rounded hover:bg-purple-700 ${isFollowing ? "Following" : "Follow"
-        }`}
+      className={`bg-[#37169C] text-white px-4 py-2.5 text-sm rounded hover:bg-purple-700 ${
+        isFollowing ? "Following" : "Follow"
+      }`}
     >
       {loading
         ? "Processing..."
         : isFollowing === null
-          ? "Loading..."
-          : isFollowing
-            ? "Unfollow"
-            : "Follow"}
+        ? "Loading..."
+        : isFollowing
+        ? "Unfollow"
+        : "Follow"}
     </button>
   );
 };

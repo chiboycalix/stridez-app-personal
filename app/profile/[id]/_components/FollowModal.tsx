@@ -15,7 +15,7 @@ interface User {
   avatar?: string;
 }
 
-const FollowModal: React.FC<FollowModalProps> = ({ type }) => {
+const FollowModal: React.FC<FollowModalProps> = ({ type }: any) => {
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -135,9 +135,9 @@ const FollowModal: React.FC<FollowModalProps> = ({ type }) => {
                   No users found
                 </div>
               ) : (
-                filteredUsers.map((user) => (
+                filteredUsers.map((user, index) => (
                   <motion.div
-                    key={user.userId}
+                    key={index}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}

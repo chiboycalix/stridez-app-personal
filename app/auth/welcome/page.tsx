@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
+import { ROUTES } from "@/constants/routes";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -16,13 +17,13 @@ export default function WelcomeContent() {
     setMounted(true)
   }, [])
 
-  const handleExplore = async () => {
-    router.push(`/`);
+  const handleSetupProfile = async () => {
+    router.push(`${ROUTES.PROFILE}`);
   };
 
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push(`/auth?tab=signin`);
+      router.push(ROUTES.SIGN_IN);
     }
   }, [getCurrentUser, isAuthenticated, router]);
 
@@ -46,7 +47,7 @@ export default function WelcomeContent() {
 
         <div>
           <Button
-            onClick={handleExplore}
+            onClick={handleSetupProfile}
             type="button"
             className="bg-purple-900 rounded-lg text-white hover:bg-opacity-90 text-xs py-3 px-6 cursor-pointer"
           >

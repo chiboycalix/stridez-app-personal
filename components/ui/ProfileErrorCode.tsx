@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 interface ProfileErrorCodeProps {
-  icon: string;
+  icon?: string;
   username: string;
   errorMessage: string;
   buttonText: string;
@@ -11,7 +11,7 @@ interface ProfileErrorCodeProps {
 }
 
 const ProfileErrorCode: React.FC<ProfileErrorCodeProps> = ({
-  icon,
+  // icon,
   username,
   errorMessage,
   buttonText,
@@ -23,9 +23,11 @@ const ProfileErrorCode: React.FC<ProfileErrorCodeProps> = ({
         <Image
           width={160}
           height={100}
-          src={icon}
+          src="/assets/icons/file-error.svg"
           alt="icon"
           className="aspect-square w-40"
+          style={{ width: 'auto', height: 'auto' }}
+          priority
         />
         <div>
           <h3 className="text-lg font-semibold pb-px">Hey, {username}</h3>

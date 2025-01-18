@@ -65,7 +65,6 @@ const Profile: React.FC = () => {
           },
         });
         const data = await response.json();
-        console.log("here", data);
         if (endpoint === "courses") {
           setter(data?.data?.courses);
         } else if (endpoint === "posts") {

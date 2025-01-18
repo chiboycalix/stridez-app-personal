@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import React, {
   useState,
@@ -14,11 +14,12 @@ import Toastify from "@/components/Toastify";
 import Link from "next/link";
 import Spinner from "@/components/Spinner";
 import { useRouter } from "next/navigation";
-import { baseUrl } from "@/utils/constant";
+import { baseUrl, cloudinaryCloudName } from "@/utils/constant";
 import Image from "next/image";
 import Cookies from "js-cookie";
+import { ROUTES } from "@/constants/routes";
 
-export default function ProfileSetup() {
+const ProfileSetup = () => {
   const { getAuth, getCurrentUser, setAuth } = useAuth();
   const router = useRouter();
   const [firstName, setFirstName] = useState<string>("");
@@ -66,7 +67,7 @@ export default function ProfileSetup() {
       data.append("folder", "Stridez/profile-images");
 
       const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/upload`,
+        `https://api.cloudinary.com/v1_1/${cloudinaryCloudName}/upload`,
         { method: "POST", body: data }
       );
 
@@ -122,17 +123,17 @@ export default function ProfileSetup() {
     }
   };
 
-  useEffect(() => {
-    const user = getCurrentUser();
-    if (!getAuth()) router.push("/auth");
-    if (user?.profileSetupCompleted) router.push("/");
-  }, [getAuth, getCurrentUser, router]);
+  // useEffect(() => {
+  //   const user = getCurrentUser();
+  //   if (!getAuth()) router.push("/auth");
+  //   // if (user?.profileSetupCompleted) router.push("/");
+  // }, [getAuth, getCurrentUser, router]);
 
   return (
     <>
       <Toastify message={alert} />
       <button
-        onClick={() => router.push("/")}
+        // onClick={() => router.push(ROUTES.HOME)}
         className="fixed top-7 right-7 p-1.5 bg-slate-100 rounded-full"
       >
         <BsX className="text-xl" />
@@ -275,3 +276,5 @@ export default function ProfileSetup() {
     </>
   );
 }
+
+export default ProfileSetup;

@@ -49,6 +49,7 @@ const Sidebar = () => {
                 src="/assets/icons/logo.png"
                 alt="STRIDEZ logo"
                 priority
+                style={{ width: 'auto', height: 'auto' }}
               />
             </Link>
           </div>

@@ -32,9 +32,6 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  console.log("courses", courses);
-  console.log("posts", posts);
-
   const tabs = React.useMemo(() => {
     const baseTabs = [
       `courses (${courses?.length || 0})`,
@@ -113,7 +110,7 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
             ) : (
               <div className="col-span-6">
                 <ProfileErrorCode
-                  icon={"/assets/icons/file-error.svg"}
+                  // icon={"/assets/icons/file-error.svg"}
                   username={
                     isCurrentUser ? user.username : "Welcome to stridez"
                   }
@@ -140,8 +137,8 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
                 <SkeletonLoader key={index} type="post" />
               ))
             ) : finalPosts && finalPosts?.length > 0 ? (
-              finalPosts.map((post) => (
-                <PostLink postId={Number(post.id)} key={post.id}>
+              finalPosts.map((post, index) => (
+                <PostLink postId={Number(post.id)} key={index}>
                   {post.mediaResource && post.mediaResource.length > 0 && (
                     <div>
                       {(() => {
@@ -165,6 +162,7 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
                                 src={media.url}
                                 alt="Post media"
                                 className="w-full h-64 object-cover rounded-lg"
+                                
                               />
                             )}
                           </div>
@@ -182,6 +180,7 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
                   errorMessage="This page is empty because you haven't started uploading any reel. Start uploading lessons to populate this page."
                   buttonText="Start Uploading"
                   href="/upload"
+                  
                 />
               </div>
             )}
@@ -193,8 +192,8 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
           <TabPanel>
             <div className="mt-4 grid 2xl:grid-cols-6 xl:grid-cols-5 lg:grid-cols-4 md:grid-cols-3 grid-cols-2 gap-3">
               {myLearning && myLearning?.length > 0 ? (
-                myLearning.map((item) => (
-                  <div key={item.id} className="p-4 bg-white rounded-md shadow">
+                myLearning.map((item, index) => (
+                  <div key={index} className="p-4 bg-white rounded-md shadow">
                     {item.title}
                   </div>
                 ))
