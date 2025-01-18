@@ -42,11 +42,11 @@ const PostModal = ({ isOpen, onClose, post, currentUser }: PostModalProps) => {
       value: post?.metadata?.commentsCount,
       alt: "comments",
     },
-    {
-      icon: <FaBookmark />,
-      value: post?.metadata?.archiveCount,
-      alt: "pinned",
-    },
+    // {
+    //   icon: <FaBookmark />,
+    //   value: post?.metadata?.archiveCount,
+    //   alt: "pinned",
+    // },
     post &&
     post?.mediaResource?.[0]?.mimeType === "video" && {
       icon: <FaEye />,

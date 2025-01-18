@@ -81,11 +81,11 @@ const PostItem = ({ post }: PostItemType) => {
       alt: "comments",
       onClick: handleCommentClick,
     },
-    {
-      icon: <FaBookmark />,
-      value: post?.metadata?.archiveCount,
-      alt: "pinned",
-    },
+    // {
+    //   icon: <FaBookmark />,
+    //   value: post?.metadata?.archiveCount,
+    //   alt: "pinned",
+    // },
     post &&
     post?.mediaResource?.[0]?.mimeType === "video/*" && {
       icon: <FaEye />,
