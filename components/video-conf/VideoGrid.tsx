@@ -9,7 +9,6 @@ export function ParticipantVideo({ participant, customClasses = '' }: any) {
     isMicrophoneEnabled,
     isCameraEnabled,
     speakingParticipants,
-    meetingConfig
   } = useVideoConferencing();
 
   const videoState = participant.isLocal ?
@@ -82,10 +81,8 @@ export function RegularGrid({ participants }: any) {
     );
   }
 
-  // For 3 or more participants
   return (
     <div className="h-full w-full p-2 sm:p-4">
-      {/* Mobile Layout (Vertical Scroll) */}
       <div className="sm:hidden h-full overflow-y-auto">
         <div className="flex flex-col gap-2">
           {participants.map((participant: any) => (
@@ -96,7 +93,6 @@ export function RegularGrid({ participants }: any) {
         </div>
       </div>
 
-      {/* Tablet/Desktop Layout with Vertical Scroll after 6 participants */}
       <div className="hidden sm:block h-full">
         <div className={`h-full ${count > 6 ? 'overflow-y-auto' : ''}`}>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-[250px] md:auto-rows-[300px]">
@@ -111,7 +107,6 @@ export function RegularGrid({ participants }: any) {
     </div>
   );
 }
-
 
 export function ScreenShareView({ remoteParticipants }: any) {
   const { screenTrack, screenSharingUser } = useVideoConferencing();
@@ -171,7 +166,6 @@ export function ParticipantsColumn({ participants }: any) {
 export function VideoGrid({
   localUser,
   remoteParticipants,
-  showControls = true,
 }: any) {
   const {
     userIsHost,
