@@ -4,6 +4,7 @@ import PermissionModal from "@/components/video-conf/PermissionModal";
 import { useEffect, useState } from "react";
 import { useVideoConferencing } from "@/context/VideoConferencingContext";
 import { useParams, useSearchParams } from "next/navigation";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 export default function WaitingRoom() {
   const { initializeLocalMediaTracks } = useVideoConferencing();
@@ -37,22 +38,28 @@ export default function WaitingRoom() {
   }, [hasPermissions]);
 
   return (
-    <div className="p-8 bg-white">
-      {
-        showPermissionPopup && <PermissionModal
-          onDismiss={handleDismissPermissions}
-          onAllow={handleAllowPermissions}
+    <ProtectedRoute
+      requireAuth={true}
+      requireVerification={true}
+      requireProfileSetup={false}
+    >
+      <div className="p-8 bg-white">
+        {
+          showPermissionPopup && <PermissionModal
+            onDismiss={handleDismissPermissions}
+            onAllow={handleAllowPermissions}
+          />
+        }
+
+        <VideoInterface
+          allowMicrophoneAndCamera={hasPermissions}
+          channelName={params.channelName! as string}
+          username={username!}
         />
-      }
+        <div className="h-[18vh]">
 
-      <VideoInterface
-        allowMicrophoneAndCamera={hasPermissions}
-        channelName={params.channelName! as string}
-        username={username!}
-      />
-      <div className="h-[18vh]">
-
+        </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }
