@@ -6,6 +6,7 @@ import { VideoPlaybackProvider } from "@/context/VideoPlaybackContext";
 import { WebSocketProvider } from "@/context/WebSocket";
 import { Manrope } from "next/font/google";
 import { VideoConferencingProvider } from "@/context/VideoConferencingContext";
+import { ToastProvider } from "@/context/ToastContext";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -23,11 +24,13 @@ export default function RootLayout({
         <AuthProvider>
           <WebSocketProvider>
             <MainLayout>
-              <PostProvider>
-                <VideoConferencingProvider>
-                  <VideoPlaybackProvider>{children}</VideoPlaybackProvider>
-                </VideoConferencingProvider>
-              </PostProvider>
+              <ToastProvider>
+                <PostProvider>
+                  <VideoConferencingProvider>
+                    <VideoPlaybackProvider>{children}</VideoPlaybackProvider>
+                  </VideoConferencingProvider>
+                </PostProvider>
+              </ToastProvider>
             </MainLayout>
           </WebSocketProvider>
         </AuthProvider>
