@@ -1074,7 +1074,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         meetingConfig.uid || null
       );
 
-      await initializeRealtimeMessaging(username!);
+      // await initializeRealtimeMessaging(username!);
 
       const remoteUsers = rtcClient.remoteUsers;
 
