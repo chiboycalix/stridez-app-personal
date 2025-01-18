@@ -1,5 +1,4 @@
 'use client';
-import Toastify from '@/components/Toastify';
 import Spinner from '@/components/Spinner';
 import SocialButtons from '@/components/SocialButtons';
 import Input from '@/components/ui/Input';
@@ -9,32 +8,37 @@ import { LockIcon, Mail } from 'lucide-react';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { AUTH_API } from '@/lib/api';
 import { ROUTES } from '@/constants/routes';
+import { useToast } from '@/context/ToastContext';
+import { STATUS_CODES } from '@/constants/statusCodes';
 
-export default function SignUpForm({
-  passwordVisible,
-  togglePasswordVisibility,
-  rememberPassword,
-  toggleRememberPassword,
-}: any) {
+export default function SignUpForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [alert, setAlert] = useState("");
   const [loading, setLoading] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
+  const { showToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
 
     if (!email || !password) {
-      setAlert("Please fill in all fields.");
+      showToast(
+        'error',
+        "Bad request",
+        'Please enter your email and password'
+      );
       setLoading(false);
       return;
     }
 
     if (password.length < 8) {
-      setAlert("Password must be at least 8 characters");
+      showToast(
+        'error',
+        "Password length",
+        'Password must be at least 8 characters'
+      );
       setLoading(false);
       return;
     }
@@ -44,20 +48,35 @@ export default function SignUpForm({
         email,
         password
       }) as any;
-      if (data.code === 201) {
-        setAlert(data.message);
+      if (data.code === STATUS_CODES.CREATED) {
+        showToast(
+          'success',
+          "Account Created",
+          data.message
+        );
         setLoading(false);
         router.push(`${ROUTES.VALIDATE_OTP(email)}`);
       } else {
-        setAlert(data.message);
+        showToast(
+          'error',
+          "Something went wrong",
+          data.message
+        );
       }
     } catch (error: any) {
       if (error.message === "APIError: User already exists") {
-        setAlert("User already exists");
+        showToast(
+          'error',
+          "Duplicate account",
+          'User already exists'
+        );
         return;
       }
-      setAlert(error.message);
-
+      showToast(
+        'error',
+        "Something went wrong",
+        error.message
+      );
     } finally {
       setLoading(false);
       setLoading(false);
@@ -79,8 +98,6 @@ export default function SignUpForm({
         <OrSeparator />
       </div>
 
-
-      <Toastify message={alert} />
       <form
         className="mx-auto mb-0 mt-3 max-w-md space-y-3"
         onSubmit={handleSubmit}

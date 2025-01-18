@@ -121,6 +121,30 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     certificate: "",
   });
 
+  useEffect(() => {
+    rateLimiter.startResetTimer();
+    return () => rateLimiter.stopResetTimer();
+  }, []);
+
+  // Add this to your VideoConferencingContext
+  const trackCallDuration = () => {
+    const startTime = Date.now();
+    const participants = Object.keys(remoteParticipants || {}).length + 1;
+
+    // Track when call ends
+    return () => {
+      const duration = (Date.now() - startTime) / 1000 / 60; // in minutes
+      const totalMinutes = duration * participants; // multiply by number of participants
+      console.log(`Call used approximately ${totalMinutes} minutes`);
+    };
+  };
+
+  // Use it when joining/leaving calls
+  useEffect(() => {
+    const cleanup = trackCallDuration();
+    return cleanup;
+  }, [hasJoinedMeeting]);
+
   const sendRateLimitedMessage = async (message: any) => {
     if (!rtmChannel) return;
 
@@ -264,7 +288,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
           await rtcScreenShareClient.publish([screenAudioTrack]);
         }
         if (rtmChannel) {
-          await rtmChannel.sendMessage({
+          await sendRateLimitedMessage({
             text: JSON.stringify({
               type: 'screen-share-state',
               uid: meetingConfig.uid,
@@ -281,7 +305,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   const handleEndScreenShare = async (action: string, uid: number) => {
     await handleScreenTrackEnd();
     if (rtmChannel) {
-      await rtmChannel.sendMessage({
+      await sendRateLimitedMessage({
         text: JSON.stringify({
           command: action,
           uid,
@@ -309,7 +333,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     rtcScreenShareClient = null as any;
 
     if (rtmChannel) {
-      await rtmChannel.sendMessage({
+      await sendRateLimitedMessage({
         text: JSON.stringify({
           type: 'screen-share-state',
           uid: meetingConfig.uid,
@@ -457,6 +481,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
   const initializeLocalMediaTracks = async () => {
     try {
+      // Clean up existing tracks
       if (localUserTrack?.videoTrack) {
         localUserTrack.videoTrack.stop();
         await localUserTrack.videoTrack.close();
@@ -466,9 +491,28 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         await localUserTrack.audioTrack.close();
       }
 
+      // Optimize video settings based on participant count
+      const participants = Object.keys(remoteParticipants || {}).length;
+      const videoConfig = {
+        encoderConfig: {
+          width: participants > 2 ? 480 : 640,
+          height: participants > 2 ? 360 : 480,
+          frameRate: participants > 2 ? 15 : 24,
+          bitrateMin: participants > 2 ? 200 : 400,
+          bitrateMax: participants > 2 ? 800 : 1000,
+        }
+      };
+
+      const audioConfig = {
+        encoderConfig: "speech_standard", // Changed from music_standard for better performance
+        AEC: true,  // Echo Cancellation
+        ANS: true,  // Noise Suppression
+        AGC: true   // Auto Gain Control
+      } as any;
+
       const [audioTrack, videoTrack] = await Promise.all([
-        AgoraRTC.createMicrophoneAudioTrack({ encoderConfig: "music_standard" }),
-        AgoraRTC.createCameraVideoTrack()
+        AgoraRTC.createMicrophoneAudioTrack(audioConfig),
+        AgoraRTC.createCameraVideoTrack(videoConfig)
       ]);
 
       await audioTrack.setEnabled(isMicrophoneEnabled);
@@ -481,9 +525,25 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       });
 
     } catch (error) {
-      console.log("Error configuring waiting area:", error);
+      console.error("Error configuring media tracks:", error);
     }
   };
+
+  // Update video quality when participants change
+  useEffect(() => {
+    const participantCount = Object.keys(remoteParticipants || {}).length;
+    if (localUserTrack?.videoTrack && participantCount > 0) {
+      const newConfig = {
+        width: participantCount > 2 ? 480 : 640,
+        height: participantCount > 2 ? 360 : 480,
+        frameRate: participantCount > 2 ? 15 : 24,
+        bitrateMin: participantCount > 2 ? 200 : 400,
+        bitrateMax: participantCount > 2 ? 800 : 1000,
+      };
+
+      localUserTrack.videoTrack.setEncoderConfiguration(newConfig);
+    }
+  }, [remoteParticipants, localUserTrack]);
 
   const releaseMediaResources = async () => {
     try {
@@ -604,11 +664,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     }
   }, [hasJoinedMeeting]);
 
-  useEffect(() => {
-    rateLimiter.startResetTimer();
-    return () => rateLimiter.stopResetTimer();
-  }, []);
-
   const broadcastCurrentMediaStates = async () => {
     if (!rtmChannel) return;
 
@@ -666,7 +721,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       };
 
       if (rtmChannel) {
-        await rtmChannel.sendMessage({
+        await sendRateLimitedMessage({
           text: JSON.stringify({
             type: 'user-info',
             uid: meetingConfig.uid,
@@ -741,7 +796,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
               });
 
               if (rtmChannel && uid !== String(meetingConfig.uid)) {
-                await rtmChannel.sendMessage({
+                await sendRateLimitedMessage({
                   text: JSON.stringify({
                     type: 'user-info',
                     uid: meetingConfig.uid,
@@ -772,7 +827,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
               break;
             case 'request-video-state':
               if (message.targetUid === String(meetingConfig.uid)) {
-                await rtmChannel.sendMessage({
+                await sendRateLimitedMessage({
                   text: JSON.stringify({
                     type: 'video-state',
                     uid: meetingConfig.uid,
@@ -1041,57 +1096,100 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     }
   };
 
+  const setupNetworkOptimization = async () => {
+    try {
+      if (!rtcClient) return;
+
+      // Enable dual stream mode for better bandwidth management
+      await rtcClient.enableDualStream();
+
+      // Set low stream parameters for when network is poor
+      await rtcClient.setLowStreamParameter({
+        width: 320,
+        height: 180,
+        framerate: 15,
+        bitrate: 200
+      });
+
+      // Set up stream fallback options when new users join
+      rtcClient.on("user-joined", async (user) => {
+        // Set fallback option for this specific user
+        // 0 = No fallback
+        // 1 = Audio only when network is poor
+        // 2 = Low quality stream when network is poor
+        await rtcClient.setStreamFallbackOption(user.uid, 1);
+      });
+
+    } catch (error) {
+      console.error("Error setting up network optimization:", error);
+    }
+  };
+
   const connectToMeetingRoom = async () => {
     try {
       rtcClient = AgoraRTC.createClient({
-        mode: "live",
+        mode: "rtc",
         codec: "vp8",
       });
 
-      rtcClient.on("user-published", onMediaStreamPublished);
-      rtcClient.on("user-unpublished", onMediaStreamUnpublished);
-      rtcClient.on("user-left", onParticipantLeft);
-      rtcClient.on("user-joined", (user) => { });
-
-      await rtcClient.setClientRole("host");
+      // Client configuration
+      // rtcClient.setClientRole("host");
       rtcClient.enableAudioVolumeIndicator();
 
-      const mode = meetingConfig?.proxyMode ?? 0;
-      if (mode !== 0 && !isNaN(parseInt(mode))) {
-        rtcClient.startProxyServer(parseInt(mode));
-      }
+      // Enable dual stream
+      await rtcClient.enableDualStream();
 
-      if (meetingConfig.role === "audience") {
-        rtcClient.setClientRole(meetingConfig.role, { level: meetingConfig.audienceLatency });
-      } else if (meetingConfig.role === "host") {
-        rtcClient.setClientRole(meetingConfig.role);
-      }
+      // Set default fallback option for all remote users
+      rtcClient.on("user-published", async (user) => {
+        try {
+          // Set fallback option for each remote user
+          await rtcClient.setStreamFallbackOption(user.uid, 2);
+          // 0: Disable fallback
+          // 1: Only subscribe to audio when network conditions are poor
+          // 2: Subscribe to low-quality stream when network conditions are poor
+        } catch (error) {
+          console.error("Error setting fallback option:", error);
+        }
+      });
 
-      meetingConfig.uid = await rtcClient.join(
+      // Rest of your connection code...
+      const joinedUid = await rtcClient.join(
         meetingConfig.appid || "",
         meetingConfig.channel || "",
         meetingConfig.rtcToken || null,
         meetingConfig.uid || null
       );
 
-      await initializeRealtimeMessaging(username!);
-
-      const remoteUsers = rtcClient.remoteUsers;
-
-      for (const user of remoteUsers) {
-        if (user.hasVideo) {
-          await rtcClient.subscribe(user, "video");
-        }
-        if (user.hasAudio) {
-          await rtcClient.subscribe(user, "audio");
-        }
+      // Set fallback option for local stream
+      if (joinedUid) {
+        await rtcClient.setStreamFallbackOption(joinedUid, 2);
       }
+
+      meetingConfig.uid = joinedUid;
 
     } catch (error) {
       console.error("Error in connectToMeetingRoom:", error);
       throw error;
     }
   };
+
+  // Add cleanup for network resources
+  const cleanupNetworkResources = async () => {
+    if (rtcClient) {
+      try {
+        await rtcClient.disableDualStream();
+        rtcClient.removeAllListeners();
+      } catch (error) {
+        console.error("Error cleaning up network resources:", error);
+      }
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      cleanupNetworkResources();
+    };
+  }, []);
 
   const joinMeetingRoom = async () => {
     try {
@@ -1100,7 +1198,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       await subscribeToExistingParticipants();
 
       if (rtmChannel) {
-        await rtmChannel.sendMessage({
+        await sendRateLimitedMessage({
           text: JSON.stringify({
             type: 'user-info',
             uid: meetingConfig.uid,
@@ -1168,14 +1266,14 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         });
 
         if (rtmChannel) {
-          await rtmChannel.sendMessage({
+          await sendRateLimitedMessage({
             text: JSON.stringify({
               type: 'request-video-state',
               uid: meetingConfig.uid,
               targetUid: uid
             })
           });
-          await rtmChannel.sendMessage({
+          await sendRateLimitedMessage({
             text: JSON.stringify({
               type: 'request-states',
               uid: meetingConfig.uid

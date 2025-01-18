@@ -12,7 +12,8 @@ import { useAuth } from "@/context/AuthContext";
 import { MEETINGS_API } from "@/lib/api";
 import { ROUTES } from "@/constants/routes";
 import { Button } from "@/components/ui/button";
-import Toastify from "@/components/Toastify";
+import { useToast } from "@/context/ToastContext";
+import { STATUS_CODES } from "@/constants/statusCodes";
 
 export default function VideoConferencing() {
   const router = useRouter();
@@ -20,23 +21,35 @@ export default function VideoConferencing() {
   const [handleCreateMeeting, setHandleCreateMeeting] = useState(false);
   const { setChannelName, channelName } = useVideoConferencing();
   const { currentUser } = useAuth();
-  const [alert, setAlert] = useState("");
+  const { showToast } = useToast();
 
   const handleCreateInstantMeeting = async () => {
     try {
       const data = await MEETINGS_API.createInstantMeeting();
-      if (data.code === 201) {
-        setAlert("Meeting Created successfully")
+      if (data.code === STATUS_CODES.CREATED) {
+        showToast(
+          'success',
+          'Success',
+          'Meeting Created successfully'
+        );
+
         setChannelName(data.data.roomCode);
         router.push(
           `${ROUTES.VIDEO_CONFERENCING.WAITING_ROOM}/${data.data.roomCode}?username=${currentUser?.profile?.firstName}`
         );
       } else {
-        setAlert("Meeting not created")
+        showToast(
+          'error',
+          'Error',
+          'Meeting not created'
+        );
       }
-
-    } catch (error) {
-      console.log({ error });
+    } catch (error: any) {
+      showToast(
+        'error',
+        'Something went wrong',
+        error.message
+      );
     }
   };
 
@@ -70,7 +83,6 @@ export default function VideoConferencing() {
       requireVerification={true}
       requireProfileSetup={false}
     >
-      <Toastify message={alert} />
       <div className='flex flex-col items-center justify-center md:h-[88vh] h-[85vh] bg-white'>
         <div className='max-w-3xl mx-auto'>
           <p className='text-black text-xl text-center'>

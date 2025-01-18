@@ -11,21 +11,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 export function AuthForm() {
   const router = useRouter();
   const queryParams = useSearchParams();
-
   const tab = queryParams.get("tab");
-
   const [isSignIn, setIsSignIn] = useState<boolean | null>(null);
-  const [passwordVisible, setPasswordVisible] = useState<boolean>(false);
-  const [rememberPassword, setRememberPassword] = useState(false);
 
   const handleTabSwitch = (signIn: boolean) => {
     setIsSignIn(signIn);
     const newTab = signIn ? "signin" : "signup";
     router.push(`/auth?tab=${newTab}`);
   };
-
-  const togglePasswordVisibility = () => setPasswordVisible((prev) => !prev);
-  const toggleRememberPassword = () => setRememberPassword((prev) => !prev);
 
   const OrSeparator = () => (
     <div className="flex items-center gap-x-4 w-full mx-auto px-1.5 text-sm text-gray-400">
@@ -52,18 +45,9 @@ export function AuthForm() {
         <div className="flex flex-col items-center w-full">
           {isSignIn ? (
             <SignInForm
-              passwordVisible={passwordVisible}
-              togglePasswordVisibility={togglePasswordVisibility}
-              rememberPassword={rememberPassword}
-              toggleRememberPassword={toggleRememberPassword}
             />
           ) : (
-            <SignUpForm
-              passwordVisible={passwordVisible}
-              togglePasswordVisibility={togglePasswordVisibility}
-              rememberPassword={rememberPassword}
-              toggleRememberPassword={toggleRememberPassword}
-            />
+            <SignUpForm />
           )}
         </div>
         <div className="all">
