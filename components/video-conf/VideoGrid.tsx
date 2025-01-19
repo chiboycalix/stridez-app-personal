@@ -36,7 +36,7 @@ export function ParticipantVideo({ participant, customClasses = '' }: any) {
   return (
     <div
       className={`relative h-full w-full rounded-lg overflow-hidden ${customClasses} 
-        ${isSpeaking ? 'border-2 border-green-500' : ''}`}
+        ${isSpeaking ? 'border-2 border-primary-500' : ''}`}
     >
       {!videoState ? (
         <VideoMutedDisplay participant={participant} />
