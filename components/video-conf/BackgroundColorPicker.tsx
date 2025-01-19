@@ -22,8 +22,6 @@ const backgroundImages = [
 ]
 
 const BackgroundColorPicker = ({ isOpen, onClose, colorPickeranchorRect, color, setColor }: any) => {
-  if (!colorPickeranchorRect) return null;
-
   const { setBackgroundColor, setBackgroundBlurring, setBackgroundImage } = useVideoConferencing();
   const [blurValue, setBlurValue] = useState(0)
   const [imgSrc, setImgSrc] = useState(undefined)
@@ -55,6 +53,8 @@ const BackgroundColorPicker = ({ isOpen, onClose, colorPickeranchorRect, color, 
   useEffect(() => {
     setBackgroundImage(imgSrc)
   }, [imgSrc])
+
+  if (!colorPickeranchorRect) return null;
 
   return (
     <AnimatePresence>
