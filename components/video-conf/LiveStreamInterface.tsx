@@ -18,6 +18,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { generalHelpers } from '@/helpers';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/constants/routes';
+import BackgroundColorPicker from './BackgroundColorPicker';
 
 type JoinRequest = {
   id: string;
@@ -31,6 +32,7 @@ const LiveStreamInterface = () => {
   const [showChat, setShowChat] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [optionsAnchorRect, setOptionsAnchorRect] = useState<DOMRect | null>(null);
+  const [colorPickeranchorRect, setColorPickeranchorRect] = useState<DOMRect | null>(null);
   const [showEmojiPopup, setShowEmojiPopup] = useState(false);
   const [emojiAnchorRect, setEmojiAnchorRect] = useState<DOMRect | null>(null);
   const [showVolumePopup, setShowVolumePopup] = useState(false);
@@ -49,11 +51,11 @@ const LiveStreamInterface = () => {
     handleShareScreen,
     isSharingScreen,
     leaveCall,
-    channelName
+    channelName,
   } = useVideoConferencing();
   const router = useRouter()
   const totalParticipants = Object.keys(remoteParticipants || {}).length + 1;
-
+  const [showColorPicker, setShowColorPicker] = useState(false)
   const searchParams = useSearchParams();
   const username = searchParams.get("username");
 
@@ -89,7 +91,11 @@ const LiveStreamInterface = () => {
     setVolumeAnchorRect(buttonRect);
     setShowVolumePopup(!showVolumePopup);
   };
-
+  const handleShowColorPicker = (event: React.MouseEvent<HTMLDivElement>) => {
+    const buttonRect = event.currentTarget.getBoundingClientRect();
+    setColorPickeranchorRect(buttonRect);
+    setShowColorPicker(!showColorPicker)
+  }
   const handleEndCall = async () => {
     router.push(`${ROUTES.VIDEO_CONFERENCING.LEAVE_MEETING}?channelName=${channelName}`)
     await leaveCall()
@@ -118,19 +124,6 @@ const LiveStreamInterface = () => {
     <div className="fixed inset-0 flex items-center justify-center z-[150] bg-[#1A1C1D] border border-gray-600">
       <div className="w-full h-full flex flex-col max-w-[1440px] mx-auto p-2 md:p-4 lg:p-6">
         {/* Top Bar */}
-        {/* <div className="flex items-center justify-between mb-2 md:mb-4">
-          <div className="w-6 md:w-8 lg:w-12" />
-          <div className="bg-black flex items-center gap-1.5 md:gap-2 rounded-md p-2">
-            <div className="text-white flex items-center gap-0.5 md:gap-1">
-              <Dot className="text-red-600 w-3 h-3 md:w-4 md:h-4 lg:w-6 lg:h-6" />
-              <span className="text-xs md:text-sm lg:text-base">LIVE 1:23</span>
-            </div>
-            <div className="text-white flex items-center gap-1 md:gap-2">
-              <StopCircleIcon className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5" />
-              <span className="hidden md:inline text-xs md:text-sm lg:text-base">Record</span>
-            </div>
-          </div>
-        </div> */}
 
         {/* Main Video Area */}
         <div className={cn(
@@ -323,9 +316,9 @@ const LiveStreamInterface = () => {
                 />
                 <IconButton
                   leftIcon={<SquareArrowOutUpRight size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />}
-                  onLeftClick={() => { }}
+                  onLeftClick={handleShowColorPicker}
                   className=""
-                  tooltip=""
+                  tooltip="set background"
                   rightTooltip=""
                 />
                 <IconButton
@@ -396,6 +389,15 @@ const LiveStreamInterface = () => {
         onClose={() => setShowVolumePopup(false)}
         anchorRect={volumeAnchorRect}
       />
+
+      {
+        <BackgroundColorPicker
+          isOpen={showColorPicker}
+          onClose={() => setShowColorPicker(false)}
+          colorPickeranchorRect={colorPickeranchorRect}
+        />
+      }
+
     </div>
   );
 };

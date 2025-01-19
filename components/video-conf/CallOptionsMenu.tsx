@@ -34,7 +34,6 @@ const CallOptionsMenu = ({ isOpen, onClose, anchorRect, setShowInvitePeople }: C
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
-      // You could add a toast notification here
     } catch (err) {
       console.error('Failed to copy link:', err);
     }
