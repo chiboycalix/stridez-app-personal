@@ -105,13 +105,27 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     AgoraRTC.disableLogUpload();
   }, []);
 
+  const sendRateLimitedMessage = async (message: any) => {
+    if (!rtmChannel) return;
+
+    try {
+      await rateLimiter.sendMessage(rtmChannel, message);
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  };
+
+  const [screenTrack, setScreenTrack] = useState<{
+    screenVideoTrack: ILocalVideoTrack | null;
+    screenAudioTrack: ILocalAudioTrack | null;
+  } | null>(null);
+
   const useRTMMessageHandler = (
     rtmChannel: RtmChannel | null,
     meetingConfig: Options,
     username: string,
     updateRemoteParticipant: (uid: string, updates: any) => void,
     setScreenShare: (uid: string | null, isLocal: boolean) => void,
-    setSpeakingParticipants: (update: any) => void,
   ) => {
 
     const handleRTMMessage = useCallback(async ({ text, peerId }: any) => {
@@ -132,13 +146,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
             updateRemoteParticipant(uid, {
               audioEnabled: message.enabled
             });
-            break;
-
-          case 'speaking-state':
-            setSpeakingParticipants((prev: any) => ({
-              ...prev,
-              [uid]: message.isSpeaking
-            }));
             break;
 
           case 'screen-share-state':
@@ -239,29 +246,54 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     });
   }, []);
 
+  const setupVolumeIndicator = useCallback(() => {
+    if (!rtcClient) return;
+
+    // Simple flag to track if we're currently processing
+    let isProcessing = false;
+    const VOLUME_THRESHOLD = 50;
+
+    rtcClient.enableAudioVolumeIndicator();
+
+    rtcClient.on("volume-indicator", (volumes) => {
+      // Skip if we're still processing the previous update
+      if (isProcessing) return;
+      isProcessing = true;
+
+      try {
+        const newSpeakers: Record<string, boolean> = {};
+
+        volumes.forEach((volume) => {
+          const uid = volume.uid === 0 ? meetingConfig.uid : volume.uid;
+          newSpeakers[String(uid)] = volume.level > VOLUME_THRESHOLD;
+        });
+
+        setSpeakingParticipants(prevSpeakers => {
+          // Only update if there are actual changes
+          const hasChanges = Object.entries(newSpeakers).some(
+            ([uid, isSpeaking]) => prevSpeakers[uid] !== isSpeaking
+          );
+
+          return hasChanges ? { ...prevSpeakers, ...newSpeakers } : prevSpeakers;
+        });
+      } finally {
+        // Reset processing flag after a short delay
+        setTimeout(() => {
+          isProcessing = false;
+        }, 200);
+      }
+    });
+
+  }, [rtcClient, meetingConfig.uid]);
+
+
   useRTMMessageHandler(
     rtmChannel,
     meetingConfig,
     username,
     updateRemoteParticipant,
-    setScreenShare,
-    setSpeakingParticipants
+    setScreenShare
   );
-
-  const sendRateLimitedMessage = async (message: any) => {
-    if (!rtmChannel) return;
-
-    try {
-      await rateLimiter.sendMessage(rtmChannel, message);
-    } catch (error) {
-      console.error('Error sending message:', error);
-    }
-  };
-
-  const [screenTrack, setScreenTrack] = useState<{
-    screenVideoTrack: ILocalVideoTrack | null;
-    screenAudioTrack: ILocalAudioTrack | null;
-  } | null>(null);
 
   const handleMediaTrackUpdate = useCallback(async (uid: string, mediaType: 'audio' | 'video', track: any, enabled: boolean) => {
     updateRemoteParticipant(uid, {
@@ -1080,7 +1112,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     if (!rtcClient) {
       return;
     }
-
     try {
       const tracksToPublish = [];
 
@@ -1163,7 +1194,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       rtcClient.on("user-joined", (user) => { });
 
       await rtcClient.setClientRole("host");
-      rtcClient.enableAudioVolumeIndicator();
+      setupVolumeIndicator();
 
       const mode = meetingConfig?.proxyMode ?? 0;
       if (mode !== 0 && !isNaN(parseInt(mode))) {
@@ -1382,7 +1413,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         await rtcScreenShareClient.leave();
         rtcScreenShareClient.removeAllListeners();
       }
-
       setHasJoinedMeeting(false);
       setIsSharingScreen(null);
       setScreenSharingUser(null);
@@ -1522,7 +1552,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         setBackgroundBlurring,
         setBackgroundImage,
         raisedHands,
-        toggleRaiseHand
+        toggleRaiseHand,
       }}>
       {children}
     </VideoConferencingContext.Provider>

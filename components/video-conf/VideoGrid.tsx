@@ -9,7 +9,8 @@ export function ParticipantVideo({ participant, customClasses = '' }: any) {
     isMicrophoneEnabled,
     isCameraEnabled,
     speakingParticipants,
-    raisedHands
+    meetingConfig,
+    raisedHands,
   } = useVideoConferencing();
 
   const hasRaisedHand = raisedHands[participant.uid];
@@ -22,12 +23,20 @@ export function ParticipantVideo({ participant, customClasses = '' }: any) {
     (participant.audioEnabled !== false && !!participant.audioTrack);
 
   const displayName = participant.isLocal ? 'You' : (participant.name || `User ${participant.uid}`);
-  const isSpeaking = speakingParticipants[participant?.uid];
+  const audioEnabled = participant.isLocal ?
+    isMicrophoneEnabled :
+    participant.audioEnabled;
+
+  const isSpeaking = audioEnabled ?
+    (participant.isLocal ?
+      speakingParticipants[String(meetingConfig.uid)] :
+      speakingParticipants[participant.uid]
+    ) : false;
 
   return (
     <div
       className={`relative h-full w-full rounded-lg overflow-hidden ${customClasses} 
-        ${isSpeaking ? 'border-2 border-green-500' : ''}`}
+        ${isSpeaking ? 'border-2 border-primary-500' : ''}`}
     >
       {!videoState ? (
         <VideoMutedDisplay participant={participant} />
