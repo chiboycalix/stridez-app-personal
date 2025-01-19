@@ -21,14 +21,20 @@ const backgroundImages = [
   }
 ]
 
-const BackgroundColorPicker = ({ isOpen, onClose, colorPickeranchorRect, color, setColor }: any) => {
+const BackgroundColorPicker = ({ isOpen, onClose, colorPickeranchorRect }: any) => {
   const { setBackgroundColor, setBackgroundBlurring, setBackgroundImage } = useVideoConferencing();
   const [blurValue, setBlurValue] = useState(0)
   const [imgSrc, setImgSrc] = useState(undefined)
+  const [color, setColor] = useState('transparent');
+
   const menuPosition = {
-    bottom: window.innerHeight - colorPickeranchorRect.top + 40,
-    right: window.innerWidth - colorPickeranchorRect.right + 20,
+    bottom: window.innerHeight - colorPickeranchorRect?.top + 40,
+    right: window.innerWidth - colorPickeranchorRect?.right + 20,
   };
+
+  const handleSetBgColor = (color: string) => {
+    setColor(color)
+  }
 
   useEffect(() => {
     setBackgroundColor(color)
@@ -40,15 +46,17 @@ const BackgroundColorPicker = ({ isOpen, onClose, colorPickeranchorRect, color, 
 
   const handleSetImgSrc = (src: any) => {
     setImgSrc(src?.src)
+    setBlurValue(0)
   }
+
+  useEffect(() => {
+    setBackgroundBlurring(blurValue)
+  }, [blurValue])
 
   const handleSetImgSrcNone = () => {
     handleSetImgSrc(null)
     setBlurValue(0)
   }
-  useEffect(() => {
-    setBackgroundBlurring(blurValue)
-  }, [blurValue])
 
   useEffect(() => {
     setBackgroundImage(imgSrc)
@@ -82,7 +90,7 @@ const BackgroundColorPicker = ({ isOpen, onClose, colorPickeranchorRect, color, 
             className="z-50 bg-[#1A1C1D] rounded-lg shadow-lg p-4"
           >
             <div className='w-full'>
-              <ColorPicker color={color} onChange={color => setColor(color.hex)} className='w-full' />
+              <ColorPicker color={color} onChange={color => handleSetBgColor(color.hex)} className='w-full' />
             </div>
             <div className='flex my-2'>
               <Button onClick={() => setColor("transparent")}>None</Button>
@@ -109,7 +117,7 @@ const BackgroundColorPicker = ({ isOpen, onClose, colorPickeranchorRect, color, 
                     {backgroundImage.src === "" ?
                       <div
                         className='w-12 h-12 bg-black cursor-pointer text-white flex items-center justify-center text-sm'
-                        onClick={handleSetImgSrcNone}
+                        onClick={() => handleSetImgSrcNone()}
                       >None</div>
                       :
                       <Image

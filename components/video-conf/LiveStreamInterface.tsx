@@ -52,12 +52,10 @@ const LiveStreamInterface = () => {
     isSharingScreen,
     leaveCall,
     channelName,
-    setBackgroundColor
   } = useVideoConferencing();
   const router = useRouter()
   const totalParticipants = Object.keys(remoteParticipants || {}).length + 1;
   const [showColorPicker, setShowColorPicker] = useState(false)
-  const [color, setColor] = useState('transparent');
   const searchParams = useSearchParams();
   const username = searchParams.get("username");
 
@@ -121,8 +119,6 @@ const LiveStreamInterface = () => {
   const handleEmojiSelect = (emoji: string) => {
     console.log('Selected emoji:', emoji);
   };
-
-  console.log({ color, showColorPicker })
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-[150] bg-[#1A1C1D] border border-gray-600">
@@ -394,13 +390,14 @@ const LiveStreamInterface = () => {
         anchorRect={volumeAnchorRect}
       />
 
-      <BackgroundColorPicker
-        isOpen={showColorPicker}
-        onClose={() => setShowColorPicker(false)}
-        colorPickeranchorRect={colorPickeranchorRect}
-        setColor={setColor}
-        color={color}
-      />
+      {
+        <BackgroundColorPicker
+          isOpen={showColorPicker}
+          onClose={() => setShowColorPicker(false)}
+          colorPickeranchorRect={colorPickeranchorRect}
+        />
+      }
+
     </div>
   );
 };
