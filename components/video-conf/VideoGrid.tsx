@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import VideoMutedDisplay from './VideoMutedDisplay';
-import { Mic, MicOff } from 'lucide-react';
+import { Hand, Mic, MicOff } from 'lucide-react';
 import { useVideoConferencing } from "@/context/VideoConferencingContext";
 import { StreamPlayer } from './StreamPlayer';
 
@@ -9,8 +9,10 @@ export function ParticipantVideo({ participant, customClasses = '' }: any) {
     isMicrophoneEnabled,
     isCameraEnabled,
     speakingParticipants,
+    raisedHands
   } = useVideoConferencing();
 
+  const hasRaisedHand = raisedHands[participant.uid];
   const videoState = participant.isLocal ?
     (isCameraEnabled && !!participant.videoTrack) :
     (participant.videoEnabled !== false && !!participant.videoTrack);
@@ -50,6 +52,11 @@ export function ParticipantVideo({ participant, customClasses = '' }: any) {
       <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-sm">
         {displayName}
       </div>
+      {hasRaisedHand && (
+        <div className="absolute top-2 left-2 bg-primary-900 text-white p-1.5 rounded-lg z-10">
+          <Hand size={16} />
+        </div>
+      )}
     </div>
   );
 }
