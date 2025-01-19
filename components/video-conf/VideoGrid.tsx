@@ -9,7 +9,8 @@ export function ParticipantVideo({ participant, customClasses = '' }: any) {
     isMicrophoneEnabled,
     isCameraEnabled,
     speakingParticipants,
-    raisedHands
+    meetingConfig,
+    raisedHands,
   } = useVideoConferencing();
 
   const hasRaisedHand = raisedHands[participant.uid];
@@ -22,7 +23,15 @@ export function ParticipantVideo({ participant, customClasses = '' }: any) {
     (participant.audioEnabled !== false && !!participant.audioTrack);
 
   const displayName = participant.isLocal ? 'You' : (participant.name || `User ${participant.uid}`);
-  const isSpeaking = speakingParticipants[participant?.uid];
+  const audioEnabled = participant.isLocal ?
+    isMicrophoneEnabled :
+    participant.audioEnabled;
+
+  const isSpeaking = audioEnabled ?
+    (participant.isLocal ?
+      speakingParticipants[String(meetingConfig.uid)] :
+      speakingParticipants[participant.uid]
+    ) : false;
 
   return (
     <div
