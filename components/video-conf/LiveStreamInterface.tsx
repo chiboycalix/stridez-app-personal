@@ -10,7 +10,7 @@ import EmojiPopup from './EmojiPopup';
 import { VideoGrid } from './VideoGrid';
 import ChatAndParticipant from './ChatAndParticipant';
 import InvitePeopleTab from './InvitePeople';
-import { X, Mic, MoreVertical, Copy, Plus, MicOff, Video, Share, MessageSquare, Menu, Users, Smile, SquareArrowOutUpRight, VideoOff } from 'lucide-react';
+import { X, Mic, MoreVertical, Copy, Plus, MicOff, Video, Share, MessageSquare, Menu, Users, Smile, SquareArrowOutUpRight, VideoOff, Hand } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AnimatePresence } from 'framer-motion';
 import { useVideoConferencing } from '@/context/VideoConferencingContext';
@@ -52,13 +52,15 @@ const LiveStreamInterface = () => {
     isSharingScreen,
     leaveCall,
     channelName,
+    toggleRaiseHand,
+    raisedHands,
   } = useVideoConferencing();
   const router = useRouter()
   const totalParticipants = Object.keys(remoteParticipants || {}).length + 1;
   const [showColorPicker, setShowColorPicker] = useState(false)
   const searchParams = useSearchParams();
   const username = searchParams.get("username");
-
+  const isRaised = raisedHands[String(meetingConfig.uid)];
   const newRequest = {
     id: 'unique-id',
     name: 'Matthew'
@@ -337,6 +339,12 @@ const LiveStreamInterface = () => {
                   iconClass="hover:bg-red-700 text-white"
                   tooltip="Leave meeting"
                   rightTooltip="Leave meeting options"
+                />
+                <IconButton
+                  leftIcon={<Hand size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />}
+                  onLeftClick={toggleRaiseHand}
+                  iconClass={cn("hover:bg-primary-600 text-white", isRaised ? "bg-primary-500" : "")}
+                  tooltip={isRaised ? "Lower Hand" : "Raise Hand"}
                 />
               </div>
 

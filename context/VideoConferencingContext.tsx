@@ -58,6 +58,8 @@ interface VideoConferencingContextContextType {
   setBackgroundColor: any;
   setBackgroundBlurring: any;
   setBackgroundImage: any;
+  raisedHands: any,
+  toggleRaiseHand: () => void,
 }
 
 let rtcClient: IAgoraRTCClient;
@@ -67,73 +69,6 @@ let rtcScreenShareClient: IAgoraRTCClient;
 let processor = null as any;
 
 const VideoConferencingContext = createContext<VideoConferencingContextContextType | undefined>(undefined);
-
-const useRTMMessageHandler = (
-  rtmChannel: RtmChannel | null,
-  meetingConfig: Options,
-  username: string,
-  updateRemoteParticipant: (uid: string, updates: any) => void,
-  setScreenShare: (uid: string | null, isLocal: boolean) => void,
-  setSpeakingParticipants: (update: any) => void,
-) => {
-  const handleRTMMessage = useCallback(async ({ text, peerId }: any) => {
-    if (!text) return;
-
-    try {
-      const message = JSON.parse(text);
-      const uid = String(message.uid).replace(/[^a-zA-Z0-9]/g, '');
-
-      switch (message.type) {
-        case 'video-state':
-          updateRemoteParticipant(uid, {
-            videoEnabled: message.enabled
-          });
-          break;
-
-        case 'audio-state':
-          updateRemoteParticipant(uid, {
-            audioEnabled: message.enabled
-          });
-          break;
-
-        case 'speaking-state':
-          setSpeakingParticipants((prev: any) => ({
-            ...prev,
-            [uid]: message.isSpeaking
-          }));
-          break;
-
-        case 'screen-share-state':
-          if (message.isSharing) {
-            setScreenShare(String(message.uid), false);
-          } else {
-            setScreenShare(null, false);
-          }
-          break;
-
-        case 'user-info':
-          if (uid === String(meetingConfig.uid)) return;
-
-          updateRemoteParticipant(uid, {
-            name: message.name,
-            rtcUid: uid
-          });
-          break;
-      }
-    } catch (error) {
-      console.error("Error processing RTM message:", error);
-    }
-  }, [meetingConfig.uid, updateRemoteParticipant, setScreenShare, setSpeakingParticipants]);
-
-  useEffect(() => {
-    if (!rtmChannel) return;
-
-    rtmChannel.on("ChannelMessage", handleRTMMessage);
-    return () => {
-      rtmChannel.off("ChannelMessage", handleRTMMessage);
-    };
-  }, [rtmChannel, handleRTMMessage]);
-};
 
 export function VideoConferencingProvider({ children }: { children: ReactNode }) {
   const [currentStep, setCurrentStep] = useState(1);
@@ -163,13 +98,87 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     uid: string;
     isLocal: boolean;
   } | null>(null);
+  const [raisedHands, setRaisedHands] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     AgoraRTC.setLogLevel(4);
     AgoraRTC.disableLogUpload();
   }, []);
 
-  let virtualBackgroundEnabled;
+  const useRTMMessageHandler = (
+    rtmChannel: RtmChannel | null,
+    meetingConfig: Options,
+    username: string,
+    updateRemoteParticipant: (uid: string, updates: any) => void,
+    setScreenShare: (uid: string | null, isLocal: boolean) => void,
+    setSpeakingParticipants: (update: any) => void,
+  ) => {
+
+    const handleRTMMessage = useCallback(async ({ text, peerId }: any) => {
+      if (!text) return;
+
+      try {
+        const message = JSON.parse(text);
+        const uid = String(message.uid).replace(/[^a-zA-Z0-9]/g, '');
+
+        switch (message.type) {
+          case 'video-state':
+            updateRemoteParticipant(uid, {
+              videoEnabled: message.enabled
+            });
+            break;
+
+          case 'audio-state':
+            updateRemoteParticipant(uid, {
+              audioEnabled: message.enabled
+            });
+            break;
+
+          case 'speaking-state':
+            setSpeakingParticipants((prev: any) => ({
+              ...prev,
+              [uid]: message.isSpeaking
+            }));
+            break;
+
+          case 'screen-share-state':
+            if (message.isSharing) {
+              setScreenShare(String(message.uid), false);
+            } else {
+              setScreenShare(null, false);
+            }
+            break;
+
+          case 'user-info':
+            if (uid === String(meetingConfig.uid)) return;
+
+            updateRemoteParticipant(uid, {
+              name: message.name,
+              rtcUid: uid
+            });
+            break;
+          case 'hand-state':
+            setRaisedHands((prev: any) => ({
+              ...prev,
+              [uid]: message.isRaised
+            }));
+            break;
+        }
+      } catch (error) {
+        console.error("Error processing RTM message:", error);
+      }
+    }, [meetingConfig.uid, updateRemoteParticipant, setScreenShare, setSpeakingParticipants]);
+
+    useEffect(() => {
+      if (!rtmChannel) return;
+
+      rtmChannel.on("ChannelMessage", handleRTMMessage);
+      return () => {
+        rtmChannel.off("ChannelMessage", handleRTMMessage);
+      };
+    }, [rtmChannel, handleRTMMessage]);
+  };
+
   const extension = new VirtualBackgroundExtension();
   AgoraRTC.registerExtensions([extension]);
   const [meetingConfig, setMeetingConfig] = useState<Options>({
@@ -638,7 +647,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         await processor.enable();
       } finally {
       }
-      virtualBackgroundEnabled = true;
     }
   }
 
@@ -654,7 +662,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         await processor.enable();
       } finally {
       }
-      virtualBackgroundEnabled = true;
     }
   }
 
@@ -667,7 +674,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         await processor.enable();
       } finally {
       }
-      virtualBackgroundEnabled = true;
     }
     if (imgSrc === undefined) {
       await processor.disable()
@@ -1383,6 +1389,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       setRemoteParticipants({});
       setSpeakingParticipants({});
       setMeetingStage("prepRoom");
+      setRaisedHands({});
       localUserTrack.videoTrack.unpipe();
       rtmChannel = null as any;
       rtmClient = null as any;
@@ -1402,6 +1409,30 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   const disconnectFromMessaging = useCallback(async () => {
     await leaveCall();
   }, [leaveCall]);
+
+  const toggleRaiseHand = useCallback(async () => {
+    if (!rtmChannel || !meetingConfig.uid) return;
+
+    const isCurrentlyRaised = raisedHands[String(meetingConfig.uid)];
+    const newState = !isCurrentlyRaised;
+
+    try {
+      await rtmChannel.sendMessage({
+        text: JSON.stringify({
+          type: 'hand-state',
+          uid: meetingConfig.uid,
+          isRaised: newState
+        })
+      });
+
+      setRaisedHands(prev => ({
+        ...prev,
+        [String(meetingConfig.uid)]: newState
+      }));
+    } catch (error) {
+      console.error('Error toggling raise hand:', error);
+    }
+  }, [meetingConfig.uid, raisedHands]);
 
   useEffect(() => {
     window.addEventListener("beforeunload", disconnectFromMessaging);
@@ -1489,7 +1520,9 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         leaveCall,
         setBackgroundColor,
         setBackgroundBlurring,
-        setBackgroundImage
+        setBackgroundImage,
+        raisedHands,
+        toggleRaiseHand
       }}>
       {children}
     </VideoConferencingContext.Provider>
