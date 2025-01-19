@@ -6,6 +6,7 @@ import { createContext, useContext, useState, ReactNode, useEffect, useLayoutEff
 import { agoraGetAppData } from '@/lib';
 import { IRemoteAudioTrack, IRemoteVideoTrack } from "agora-rtc-sdk-ng";
 import { rateLimiter } from "@/utils/MessageRateLimiter";
+import VirtualBackgroundExtension from "agora-extension-virtual-background";
 
 interface RemoteParticipant {
   name: string;
@@ -54,12 +55,16 @@ interface VideoConferencingContextContextType {
   screenTrack: any;
   screenSharingUser: any;
   leaveCall: () => Promise<void>;
+  setBackgroundColor: any;
+  setBackgroundBlurring: any;
+  setBackgroundImage: any;
 }
 
 let rtcClient: IAgoraRTCClient;
 let rtmClient: RtmClient;
 let rtmChannel: RtmChannel;
 let rtcScreenShareClient: IAgoraRTCClient;
+let processor = null as any;
 
 const VideoConferencingContext = createContext<VideoConferencingContextContextType | undefined>(undefined);
 
@@ -164,6 +169,9 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     AgoraRTC.disableLogUpload();
   }, []);
 
+  let virtualBackgroundEnabled;
+  const extension = new VirtualBackgroundExtension();
+  AgoraRTC.registerExtensions([extension]);
   const [meetingConfig, setMeetingConfig] = useState<Options>({
     channel: "",
     appid: "d9b1d4e54b9e4a01aac1de9833d83752",
@@ -603,6 +611,70 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       console.log("Error configuring waiting area:", error);
     }
   };
+
+  const getProcessorInstance = async () => {
+    if (!processor && localUserTrack.videoTrack) {
+      processor = extension.createProcessor();
+      try {
+        await processor.init();
+      } catch (error) {
+        console.log("Fail to load WASM resource!");
+        return null;
+      }
+      localUserTrack.videoTrack.pipe(processor).pipe(localUserTrack.videoTrack.processorDestination);
+    }
+    return processor;
+  }
+
+  const setBackgroundColor = async (color: string) => {
+    if (localUserTrack.videoTrack) {
+      const processor = await getProcessorInstance();
+      try {
+        if (color === "transparent") {
+          await processor.disable();
+          return;
+        }
+        processor.setOptions({ type: 'color', color: color });
+        await processor.enable();
+      } finally {
+      }
+      virtualBackgroundEnabled = true;
+    }
+  }
+
+  const setBackgroundBlurring = async (blurDegree: number) => {
+    if (localUserTrack.videoTrack) {
+      const processor = await getProcessorInstance();
+      try {
+        if (blurDegree === 0) {
+          await processor.disable();
+          return;
+        }
+        processor.setOptions({ type: 'blur', blurDegree: blurDegree });
+        await processor.enable();
+      } finally {
+      }
+      virtualBackgroundEnabled = true;
+    }
+  }
+
+  const setBackgroundImage = async (imgSrc: any) => {
+    const imgElement = document.createElement('img');
+    imgElement.onload = async () => {
+      let processor = await getProcessorInstance();
+      try {
+        processor.setOptions({ type: 'img', source: imgElement });
+        await processor.enable();
+      } finally {
+      }
+      virtualBackgroundEnabled = true;
+    }
+    if (imgSrc === undefined) {
+      await processor.disable()
+      return;
+    }
+    imgElement.src = imgSrc;
+  }
 
   const releaseMediaResources = useCallback(async () => {
     try {
@@ -1311,7 +1383,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       setRemoteParticipants({});
       setSpeakingParticipants({});
       setMeetingStage("prepRoom");
-
+      localUserTrack.videoTrack.unpipe();
       rtmChannel = null as any;
       rtmClient = null as any;
       rtcClient = null as any;
@@ -1414,7 +1486,10 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         screenTrack,
         isSharingScreen,
         screenSharingUser,
-        leaveCall
+        leaveCall,
+        setBackgroundColor,
+        setBackgroundBlurring,
+        setBackgroundImage
       }}>
       {children}
     </VideoConferencingContext.Provider>
