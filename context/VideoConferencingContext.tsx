@@ -211,20 +211,18 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
             }
             break;
           case 'user-joined':
-            // Only add to remote participants if they're not in waiting room
-            if (!waitingParticipants[uid]) {
-              setRemoteParticipants(prevUsers => ({
-                ...prevUsers,
-                [uid]: {
-                  name: message.name,
-                  rtcUid: uid,
-                  videoTrack: null,
-                  audioTrack: null,
-                  audioEnabled: false,
-                  videoEnabled: false
-                }
-              }));
-            }
+            // Add to remote participants regardless of who admitted them
+            setRemoteParticipants(prevUsers => ({
+              ...prevUsers,
+              [uid]: {
+                name: message.name,
+                rtcUid: uid,
+                videoTrack: null,
+                audioTrack: null,
+                audioEnabled: message.audioEnabled,
+                videoEnabled: message.videoEnabled
+              }
+            }));
             break;
         }
       } catch (error) {
@@ -753,7 +751,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   const setBackgroundImage = async (imgSrc: any) => {
     const imgElement = document.createElement('img');
     imgElement.onload = async () => {
-      let processor = await getProcessorInstance();
+      const processor = await getProcessorInstance();
       try {
         processor.setOptions({ type: 'img', source: imgElement });
         await processor.enable();
@@ -1285,7 +1283,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     }
   };
 
-  const joinMeetingRoom = async () => {
+  const joinMeetingRoom = useCallback(async () => {
     try {
       if (!meetingConfig) return;
       await connectToMeetingRoom();
@@ -1296,7 +1294,9 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
           text: JSON.stringify({
             type: 'user-joined',
             uid: meetingConfig.uid,
-            name: username
+            name: username,
+            videoEnabled: isCameraEnabled,
+            audioEnabled: isMicrophoneEnabled
           })
         });
       }
@@ -1330,7 +1330,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     } catch (error) {
       console.log("Error joining meeting:", error);
     }
-  };
+  }, []);
 
   const subscribeToParticipantMedia = async (user: any, mediaType: "audio" | "video") => {
     try {
@@ -1467,7 +1467,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     }
   }, [meetingConfig.uid, raisedHands]);
 
-  const setupRTMEventHandlers = () => {
+  const setupRTMEventHandlers = useCallback(() => {
     if (!rtmChannel) return;
 
     rtmChannel.on("ChannelMessage", async ({ text, peerId }: any) => {
@@ -1478,8 +1478,43 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         console.log('RTM message received:', message); // Debug log
 
         switch (message.type) {
+          case 'admission-decision-broadcast':
+            console.log('Received admission decision broadcast:', message);
+
+            // Everyone (including admitter) removes from waiting list
+            setWaitingParticipants(prev => {
+              const updated = { ...prev };
+              delete updated[message.requesterId];
+              return updated;
+            });
+
+            // If this message is for me, and I'm approved, join the meeting
+            if (message.requesterId === String(meetingConfig.uid) && message.isApproved) {
+              console.log('I was admitted, joining meeting...');
+              await joinMeetingRoom();
+            }
+            break;
+
+          case 'user-joined':
+            console.log('User joined broadcast received:', message);
+            // Only add to remote participants if they're not in waiting room
+            if (!waitingParticipants[uid]) {
+              setRemoteParticipants(prevUsers => ({
+                ...prevUsers,
+                [uid]: {
+                  name: message.name,
+                  rtcUid: uid,
+                  videoTrack: null,
+                  audioTrack: null,
+                  audioEnabled: message.audioEnabled,
+                  videoEnabled: message.videoEnabled
+                }
+              }));
+            }
+            break;
+
           case 'admission-request':
-            console.log('Admission request received:', message); // Debug log
+            console.log('Admission request received:', message);
             setWaitingParticipants(prev => ({
               ...prev,
               [uid]: {
@@ -1490,27 +1525,14 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
             }));
             break;
 
-          case 'admission-response':
-            console.log('Admission response received:', message); // Debug log
-            if (message.requesterId === String(meetingConfig.uid)) {
-              if (message.isApproved) {
-                // setIsWaiting(false); 
-                await joinMeetingRoom();  // Join the meeting
-              } else {
-                // Handle rejection
-                console.log("Admission request was denied");
-                // router.push('/meeting-denied');
-              }
-            }
-            break;
         }
       } catch (error) {
         console.error("Error processing RTM message:", error);
       }
     });
-  };
+  }, [joinMeetingRoom, meetingConfig.uid, waitingParticipants]);
 
-  const initializeRTMForAdmission = async () => {
+  const initializeRTMForAdmission = useCallback(async () => {
     try {
       if (!meetingConfig.appid || !meetingConfig.rtmToken || !meetingConfig.channel) {
         console.error('Missing RTM configuration:', {
@@ -1554,7 +1576,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       console.error("Error initializing RTM:", error);
       return false;
     }
-  };
+  }, [meetingConfig.uid, meetingConfig.appid, meetingConfig.channel, meetingConfig.rtmToken, setupRTMEventHandlers]);
 
   const checkIfRoomEmpty = useCallback(async () => {
     if (!rtmChannel || !meetingConfig.uid) return true;
@@ -1578,7 +1600,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       console.error("Error checking room members:", error);
       return true;
     }
-  }, [rtmChannel, meetingConfig.uid]);
+  }, [meetingConfig.uid]);
 
   const requestRoomAdmission = useCallback(async () => {
     if (!username || !meetingConfig.uid) return false;
@@ -1614,7 +1636,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       console.error("Error requesting admission:", error);
       return false;
     }
-  }, [username, meetingConfig, joinMeetingRoom]);
+  }, [username, meetingConfig, joinMeetingRoom, checkIfRoomEmpty, initializeRTMForAdmission]);
 
   const cleanupRTM = async () => {
     if (rtmChannel) {
@@ -1627,10 +1649,12 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     rtmClient = null as any;
   };
 
+  // Add this to your handleAdmissionResponse function
   const handleAdmissionResponse = useCallback(async (requesterId: string, isApproved: boolean) => {
     if (!rtmChannel) return;
 
     try {
+      // First, send direct response to requester
       await rtmChannel.sendMessage({
         text: JSON.stringify({
           type: 'admission-response',
@@ -1640,25 +1664,27 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         })
       });
 
-      // Remove from waiting participants first
+      // Then broadcast the decision to all participants
+      await rtmChannel.sendMessage({
+        text: JSON.stringify({
+          type: 'admission-decision-broadcast',
+          uid: meetingConfig.uid,
+          requesterId,
+          isApproved,
+          decisionMaker: username
+        })
+      });
+
+      // Remove from local waiting participants
       setWaitingParticipants(prev => {
         const updated = { ...prev };
         delete updated[requesterId];
         return updated;
       });
-
-      // If not approved, also remove from remote participants if they exist there
-      if (!isApproved) {
-        setRemoteParticipants(prev => {
-          const updated = { ...prev };
-          delete updated[requesterId];
-          return updated;
-        });
-      }
     } catch (error) {
       console.error("Error handling admission:", error);
     }
-  }, [rtmChannel, meetingConfig.uid]);
+  }, [rtmChannel, meetingConfig.uid, username]);
 
   const leaveCall = useCallback(async () => {
     try {
