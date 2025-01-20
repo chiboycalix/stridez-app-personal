@@ -187,14 +187,25 @@ export function VideoGrid({
     userIsHost,
     meetingRoomData,
     isSharingScreen,
-    meetingConfig
+    meetingConfig,
+    hasJoinedMeeting,
+    waitingParticipants
   } = useVideoConferencing();
 
   const { participants } = useMemo(() => {
-
     const validRemoteParticipants = Object.entries(remoteParticipants || {})
       .map(([uid, user]: any) => {
+        // Skip if this user is in waiting room
+        if (waitingParticipants[uid]) {
+          return null;
+        }
+
         if (uid === String(meetingConfig?.uid)) {
+          return null;
+        }
+
+        // Skip users without proper initialization
+        if (!user.rtcUid || user.name === "Anonymous") {
           return null;
         }
 
@@ -224,7 +235,14 @@ export function VideoGrid({
       participants: [preparedLocalUser, ...validRemoteParticipants]
         .filter(p => p !== null && p !== undefined)
     };
-  }, [localUser, remoteParticipants, userIsHost, meetingRoomData, meetingConfig?.uid]);
+  }, [
+    localUser,
+    remoteParticipants,
+    userIsHost,
+    meetingRoomData,
+    meetingConfig?.uid,
+    waitingParticipants // Add to dependencies
+  ]);
 
   if (isSharingScreen) {
     return (

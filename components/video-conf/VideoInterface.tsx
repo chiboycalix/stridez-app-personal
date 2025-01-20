@@ -10,6 +10,7 @@ import { AnimatePresence } from 'framer-motion';
 import { StreamPlayer } from './StreamPlayer';
 import LiveStreamInterface from './LiveStreamInterface';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '../ui/dialog';
 
 export default function VideoInterface({
   allowMicrophoneAndCamera,
@@ -22,6 +23,7 @@ export default function VideoInterface({
 }) {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [handleSelectMicrophone, setHandleSelectMicrophone] = useState(false);
+  const [isWaiting, setIsWaiting] = useState(false);
   const {
     isMicrophoneEnabled,
     setMeetingStage,
@@ -34,23 +36,43 @@ export default function VideoInterface({
     setChannelName,
     localUserTrack,
     meetingConfig,
+    requestRoomAdmission,
+    isFirstParticipant,
     joinMeetingRoom
   } = useVideoConferencing();
 
+  const [isLoading, setIsLoading] = useState(false);
+
   const handleGoLive = async () => {
     try {
-      await joinMeetingRoom(channelName)
-      setMeetingStage("hasJoinedMeeting")
-      setHasJoinedMeeting(true);
+      setIsLoading(true);
+      setChannelName(channelName);
+      setUsername(username);
+
+      // Wait a moment for Agora config to be set
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const isFirst = await requestRoomAdmission();
+      console.log({ isFirst })
+      if (!isFirst) {
+        setIsWaiting(true);
+      }
     } catch (error: any) {
       console.log(error);
+    } finally {
+      setIsLoading(false);
     }
   };
+  useEffect(() => {
+    if (hasJoinedMeeting) {
+      setIsWaiting(false);
+    }
+  }, [hasJoinedMeeting]);
 
   useEffect(() => {
-    setChannelName(channelName)
-    setUsername(username)
-  }, [channelName, setChannelName, username, setUsername])
+    setChannelName(channelName);
+    setUsername(username);
+  }, [channelName, setChannelName, username, setUsername]);
 
   return (
     <div>
@@ -63,6 +85,18 @@ export default function VideoInterface({
             <p className="text-gray-600 mt-1 text-center text-sm sm:text-base">
               Setup your audio and video before joining
             </p>
+            {isWaiting && !isFirstParticipant && !hasJoinedMeeting && (
+              <Dialog open>
+                <DialogContent className="sm:max-w-[425px]">
+                  <div className="flex flex-col items-center gap-4 py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+                    <p className="text-center text-gray-600">
+                      Please wait while a participant admits you to the meeting.
+                    </p>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
 
             <div className="bg-red-500 text-white px-3 py-2 rounded-full mt-4 text-sm flex items-center gap-2">
               <span className="inline-block w-3 h-3 rounded-full bg-white"></span>
@@ -145,9 +179,14 @@ export default function VideoInterface({
                 <div className='sm:flex-1 w-full'>
                   <Button
                     onClick={handleGoLive}
+                    disabled={isLoading}
                     className="bg-primary hover:bg-primary-700 w-full py-2"
                   >
-                    Go Live
+                    {isLoading ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                    ) : (
+                      'Go Live'
+                    )}
                   </Button>
                 </div>
               </div>

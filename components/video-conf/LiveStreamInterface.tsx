@@ -19,6 +19,7 @@ import { generalHelpers } from '@/helpers';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/constants/routes';
 import BackgroundColorPicker from './BackgroundColorPicker';
+import { AdmissionNotification } from './AdmissionNotification';
 
 type JoinRequest = {
   id: string;
@@ -54,6 +55,8 @@ const LiveStreamInterface = () => {
     channelName,
     toggleRaiseHand,
     raisedHands,
+    waitingParticipants,
+    handleAdmissionResponse,
   } = useVideoConferencing();
   const router = useRouter()
   const totalParticipants = Object.keys(remoteParticipants || {}).length + 1;
@@ -122,11 +125,35 @@ const LiveStreamInterface = () => {
     console.log('Selected emoji:', emoji);
   };
 
+  // const admissionRequests = Object.entries(waitingParticipants).map(([uid, data]: [string, any]) => (
+  //   <AdmissionNotification
+  //     key={uid}
+  //     requesterName={data.name}
+  //     onAllow={() => handleAdmissionResponse(uid, true)}
+  //     onDeny={() => handleAdmissionResponse(uid, false)}
+  //   />
+  // ));
+  const handleAdmit = async (uid: string) => {
+    try {
+      console.log('Admitting user:', uid);
+      await handleAdmissionResponse(uid, true);
+    } catch (error) {
+      console.error('Error admitting user:', error);
+    }
+  };
+
   return (
     <div className="fixed inset-0 flex items-center justify-center z-[150] bg-[#1A1C1D] border border-gray-600">
       <div className="w-full h-full flex flex-col max-w-[1440px] mx-auto p-2 md:p-4 lg:p-6">
         {/* Top Bar */}
-
+        {Object.entries(waitingParticipants).map(([uid, participant]: any) => (
+          <AdmissionNotification
+            key={uid}
+            requesterName={participant.name}
+            onAllow={() => handleAdmissionResponse(uid, true)}
+            onDeny={() => handleAdmissionResponse(uid, false)}
+          />
+        ))}
         {/* Main Video Area */}
         <div className={cn(
           "relative flex-1 rounded-md overflow-hidden",
