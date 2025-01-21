@@ -126,7 +126,8 @@ const PostItem = ({ post }: PostItemType) => {
     if (liked !== null) {
       setIsLiked(JSON.parse(liked));
     }
-  }, [isLiked, post.id]);
+    console.log('heheheheh', post);
+  }, [isLiked, post.id, ]);
 
   return (
     <div className="mx-auto p-3 shadow-md border rounded-2xl bg-white w-full max-w-[28rem] sm:max-w-[30rem] md:max-w-[32rem]">

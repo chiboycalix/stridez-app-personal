@@ -202,7 +202,8 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       } catch (error) {
         console.error("Error processing RTM message:", error);
       }
-    }, [meetingConfig.uid, updateRemoteParticipant, setScreenShare, setSpeakingParticipants]);
+      //removed setspeakingparticipants from the dependecy array
+    }, [meetingConfig.uid, updateRemoteParticipant, setScreenShare]);
 
     useEffect(() => {
       if (!rtmChannel) return;

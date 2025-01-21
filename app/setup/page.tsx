@@ -14,24 +14,34 @@ import Toastify from "@/components/Toastify";
 import Link from "next/link";
 import Spinner from "@/components/Spinner";
 import { useRouter } from "next/navigation";
-import { baseUrl, cloudinaryCloudName } from "@/utils/constant";
+import { baseUrl, cloudinaryCloudName, cloudinaryUploadPreset } from "@/utils/constant";
 import Image from "next/image";
 import Cookies from "js-cookie";
 import { ROUTES } from "@/constants/routes";
 
 const ProfileSetup = () => {
   const { getAuth, getCurrentUser, setAuth } = useAuth();
+  const user = getCurrentUser();
   const router = useRouter();
-  const [firstName, setFirstName] = useState<string>("");
-  const [lastName, setLastName] = useState<string>("");
-  const [bio, setBio] = useState<string>("");
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  // const [user, setUser] = useState<any>({});
+  const [firstName, setFirstName] = useState<string>(user?.profile?.firstName || "");
+  const [lastName, setLastName] = useState<string>(user?.profile?.lastName || "");
+  const [bio, setBio] = useState<string>( user?.profile?.bio || "");
+  const [profileImage, setProfileImage] = useState<string | null>(user?.profile?.avatar || null);
   const [image, setImage] = useState<File | null>(null);
-  const [username, setUsername] = useState<string>("");
+  const [username, setUsername] = useState<string>( user?.username || "");
   const [alert, setAlert] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    // setUser(user);
+    console.log(user)
+    if (!getAuth()) router.push("/auth");
+    // if (user?.profileSetupCompleted) router.push("/");
+  }, [getAuth, router, user]);
+
 
   // Trigger file input for profile image
   const handleImageClick = () => {
@@ -58,11 +68,11 @@ const ProfileSetup = () => {
       data.append("file", avatar);
       data.append(
         "upload_preset",
-        process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET as string
+        cloudinaryUploadPreset as string
       );
       data.append(
         "cloud_name",
-        process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME as string
+        cloudinaryCloudName as string
       );
       data.append("folder", "Stridez/profile-images");
 
@@ -113,8 +123,8 @@ const ProfileSetup = () => {
         setAlert(result.message);
       } else {
         setAlert("Profile updated successfully!");
-        setAuth(true, result.data);
-        router.push("/auth/interest");
+        // setAuth(true, result.data);
+        router.push(ROUTES.SELECT_INTERESTS);
       }
     } catch (error) {
       console.log("Profile update error:", error);
@@ -122,12 +132,6 @@ const ProfileSetup = () => {
       setLoading(false);
     }
   };
-
-  // useEffect(() => {
-  //   const user = getCurrentUser();
-  //   if (!getAuth()) router.push("/auth");
-  //   // if (user?.profileSetupCompleted) router.push("/");
-  // }, [getAuth, getCurrentUser, router]);
 
   return (
     <>
@@ -141,10 +145,10 @@ const ProfileSetup = () => {
       <div className="flex flex-col lg:flex-row max-h-screen p-3 lg:gap-20 bg-white rounded-lg">
         {/* Profile Setup Header */}
         <div className="w-full lg:w-5/12 relative">
-          <Image
-            width={800}
-            height={256}
-            src={"assets/profilepix.png"}
+          <img
+            // width={800}
+            // height={256}
+            src="assets/profilepix.png"
             alt="Profile Setup"
             className="w-full h-64 lg:h-full object-cover rounded-lg"
           />
@@ -170,7 +174,7 @@ const ProfileSetup = () => {
                   Avatar
                 </label>
                 <div className="flex items-center gap-3 py-3">
-                  <Image
+                  <img
                     width={80}
                     height={80}
                     src={profileImage || "/assets/userpix.png"}

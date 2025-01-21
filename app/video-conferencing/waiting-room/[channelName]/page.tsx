@@ -35,7 +35,7 @@ export default function WaitingRoom() {
     if (hasPermissions) {
       initializeLocalMediaTracks();
     }
-  }, [hasPermissions]);
+  }, [hasPermissions, initializeLocalMediaTracks]);
 
   return (
     <ProtectedRoute

@@ -20,7 +20,9 @@ const ProfileCompletionAlert = ({
       <AlertDescription className="text-sm text-gray-600">
         Welcome {currentUser?.profile?.username}! Please complete your profile setup to access all features.
         <Link
-          href={ROUTES.PROFILE(currentUser?.id)}
+          // href={ROUTES.PROFILE(currentUser?.id)}
+          href={ROUTES.SETUP_PROFILE}
+
           className="ml-2 text-blue-600 hover:text-blue-800 hover:underline"
         >
           Complete Setup →

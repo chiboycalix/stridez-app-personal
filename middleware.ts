@@ -14,6 +14,7 @@ const protectedPaths = [
   "/video-conferencing",
   "/market-place",
   "/classroom",
+  "/setup",
 ];
 
 export function middleware(request: NextRequest) {

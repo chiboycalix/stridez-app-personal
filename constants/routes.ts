@@ -3,7 +3,8 @@ export const ROUTES = {
   SIGN_IN: "/auth?tab=signin",
   SIGN_UP: "/auth?tab=signup",
   FORGOT_PASSWORD: "/auth/forgot-password",
-  SETUP_PROFILE: "/setup-profile",
+  SETUP_PROFILE: "/setup",
+  SELECT_INTERESTS: "/select-interests",
   VALIDATE_OTP: (email: string) => `/auth/validate-otp?email=${email}`,
 
   LIVE: "/live",

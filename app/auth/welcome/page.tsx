@@ -17,8 +17,9 @@ export default function WelcomeContent() {
     setMounted(true)
   }, [])
 
-  const handleSetupProfile = async () => {
-    router.push(`${ROUTES.PROFILE}`);
+  const handleSetupProfile = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    router.push(`${ROUTES.SETUP_PROFILE}`);
   };
 
   useEffect(() => {
@@ -47,7 +48,7 @@ export default function WelcomeContent() {
 
         <div>
           <Button
-            onClick={handleSetupProfile}
+            onClick={(e)=>handleSetupProfile(e)}
             type="button"
             className="bg-purple-900 rounded-lg text-white hover:bg-opacity-90 text-xs py-3 px-6 cursor-pointer"
           >
