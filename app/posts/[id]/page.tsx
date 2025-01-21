@@ -49,12 +49,14 @@ export default function PostModalWrapper() {
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center"
       >
-        <PostModal
-          isOpen={true}
-          onClose={handleClose}
-          post={postDetail}
-          currentUser={user}
-        />
+        {postDetail && (
+          <PostModal
+            isOpen={true}
+            onClose={handleClose}
+            post={postDetail}
+            currentUser={user}
+          />
+        )}
       </motion.div>
     </AnimatePresence>
   );

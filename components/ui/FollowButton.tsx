@@ -109,9 +109,9 @@ const FollowButton = ({ followedId }: FollowButtonProp) => {
       }`}
     >
       {loading
-        ? "Processing..."
-        : isFollowing === null
         ? "Loading..."
+        : isFollowing === null
+        ? "Follow"
         : isFollowing
         ? "Unfollow"
         : "Follow"}

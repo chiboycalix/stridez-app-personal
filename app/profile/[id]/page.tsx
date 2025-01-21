@@ -81,7 +81,7 @@ const Profile: React.FC = () => {
     const initiator = async () => {
       await fetchUserProfile();
       await fetchData<Course>("courses", setCourses);
-      await fetchData<Post>("posts?page=1&limit=10", setPosts);
+      await fetchData<Post>("posts", setPosts);
       if (isCurrentUser) {
         fetchData<MyLearning>("learnings?page=1&limit=10", setMyLearning);
       }

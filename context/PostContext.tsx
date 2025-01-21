@@ -9,6 +9,7 @@ import React, {
   ReactNode,
 } from "react";
 import Cookies from "js-cookie";
+import { baseUrl } from "@/utils/constant";
 
 type MetadataType = {
   mimetype: string;
@@ -30,6 +31,8 @@ export type PostMediaType = {
 
 export type PostType = {
   id: number;
+  firstName: string;
+  lastName: string;
   userId: number;
   title: string;
   avatar: string;
@@ -38,6 +41,7 @@ export type PostType = {
   metadata: MetadataType;
   createdAt: string;
   body: string;
+  thumbnailUrl?: string;
 };
 
 interface PostContextType {
@@ -68,7 +72,6 @@ interface PostProviderProps {
 export const PostProvider = ({ children }: PostProviderProps) => {
   const [posts, setPosts] = useState<PostType[]>([]);
   const [loading, setLoading] = useState(true);
-  const baseUrl = process.env.NEXT_PUBLIC_BASEURL;
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -83,7 +86,7 @@ export const PostProvider = ({ children }: PostProviderProps) => {
     } finally {
       setLoading(false);
     }
-  }, [baseUrl]);
+  }, []);
 
   useEffect(() => {
     fetchPosts();

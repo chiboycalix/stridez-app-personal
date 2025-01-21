@@ -20,7 +20,7 @@ export default function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { showToast } = useToast();
+  const { showToast, removeToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     setLoading(true);
@@ -72,6 +72,7 @@ export default function SignInForm() {
       );
     } finally {
       setLoading(false);
+      removeToast(10000);
     }
   };
 

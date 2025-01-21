@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { FaBookmark, FaEye, FaHeart, FaRegCommentDots } from "react-icons/fa";
 import { PiDotsThreeOutlineVerticalFill } from "react-icons/pi";
 import PostComments from "./PostComments";
-import { Menu } from "@headlessui/react";
+import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { useVideoPlayback } from "@/context/VideoPlaybackContext";
 import VideoMedia from "./ModalMedia";
 import {
@@ -15,11 +15,36 @@ import {
 } from "@headlessui/react";
 import Image from "next/image";
 import Cookies from "js-cookie";
+import { PostType } from "@/context/PostContext";
+// import { PostType } from "@/context/PostContext";
+
+// type PostType = {
+//   id: number;
+//   title: string;
+//   body: string;
+//   avatar: string;
+//   firstName: string;
+//   lastName: string;
+//   metadata: {
+//     likesCount: number;
+//     commentsCount: number;
+//     archiveCount: number;
+//   };
+//   mediaResource: {
+//     id: number;
+//     mimeType: string;
+//     metadata: {
+//       viewsCount: number;
+//     };
+//   }[];
+//   thumbnailUrl: string;
+//   userId: number;
+// }
 
 type PostModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  post: any;
+  post: PostType;
   currentUser: any;
 };
 
@@ -48,22 +73,27 @@ const PostModal = ({ isOpen, onClose, post, currentUser }: PostModalProps) => {
     //   alt: "pinned",
     // },
     post &&
-    post?.mediaResource?.[0]?.mimeType === "video" && {
-      icon: <FaEye />,
-      value: post?.mediaResource?.[0]?.metadata?.viewsCount || 0,
-      alt: "views",
-    },
+      post?.mediaResource?.[0]?.mimeType === "video" && {
+        icon: <FaEye />,
+        value: post?.mediaResource?.[0]?.metadata?.viewsCount || 0,
+        alt: "views",
+      },
   ].filter(Boolean);
 
   const handleFetchPostComments = useCallback(async () => {
     try {
       const response = await fetch(
-        `${baseUrl}/posts/${post?.id}/comments?page=1&&limit=5`
+        `${baseUrl}/posts/${Number(post?.id)}/comments?page=1&&limit=5`,
+        {
+          headers: {
+            Authorization: `Bearer ${Cookies.get("accessToken")}`,
+          },
+        }
       );
       const data = await response.json();
       setPostComments(data?.data?.comments);
     } catch (error) {
-      console.log("Error fetching post comments:", error);
+      console.error("Error fetching post comments:", error);
     }
   }, [baseUrl, post?.id]);
 
@@ -240,7 +270,7 @@ const PostModal = ({ isOpen, onClose, post, currentUser }: PostModalProps) => {
                   <VideoMedia
                     title={post?.title}
                     size="w-fit min-w-[25rem] bg-gray-100 max-w-[40rem] max-h-[20rem] h-full md:min-h-[84vh] max-h-[84vh] rounded-lg object-cover"
-                    media={post?.thumbnailUrl}
+                    media={post?.thumbnailUrl || ""}
                     postMedia={post?.mediaResource}
                     postId={post?.id}
                   />
@@ -309,16 +339,16 @@ const PostModal = ({ isOpen, onClose, post, currentUser }: PostModalProps) => {
                   </div>
                   <div className="min-w-12 py-1 h-full flex flex-col justify-between items-center">
                     <Menu as="div" className="relative inline-block text-left">
-                      <Menu.Button>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          className="py-3.5 px-2.5 bg-gray-300 text-lg text-white rounded-full mb-px"
-                        >
-                          <PiDotsThreeOutlineVerticalFill />
-                        </motion.button>
-                      </Menu.Button>
-                      <Menu.Items className="absolute right-0 mt-2 w-40 origin-top-right bg-white divide-y divide-gray-100 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                      {/* <MenuButton> */}
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        className="py-3.5 px-2.5 bg-gray-300 text-lg text-white rounded-full mb-px"
+                      >
+                        <PiDotsThreeOutlineVerticalFill />
+                      </motion.button>
+                      {/* </MenuButton> */}
+                      <MenuItems className="absolute right-0 mt-2 w-40 origin-top-right bg-white divide-y divide-gray-100 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
                         <div className="px-1 py-1">
                           {[
                             "Share Post",
@@ -327,7 +357,7 @@ const PostModal = ({ isOpen, onClose, post, currentUser }: PostModalProps) => {
                           ]
                             .filter(Boolean)
                             .map((option, index) => (
-                              <Menu.Item key={index}>
+                              <MenuItem key={index}>
                                 {({ active }) => (
                                   <button
                                     className={`${
@@ -346,16 +376,16 @@ const PostModal = ({ isOpen, onClose, post, currentUser }: PostModalProps) => {
                                     {option}
                                   </button>
                                 )}
-                              </Menu.Item>
+                              </MenuItem>
                             ))}
                         </div>
-                      </Menu.Items>
+                      </MenuItems>
                     </Menu>
 
                     <div className="">
                       {postSocial?.map((menu, index) => (
                         <div
-                          className={`flex flex-col items-center text-xs mb-2.5 cursor-pointer ${menu.colorClass}`}
+                          className="flex flex-col items-center text-xs mb-2.5 cursor-pointer"
                           key={index}
                         >
                           <motion.button

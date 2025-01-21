@@ -45,11 +45,12 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
   const [selectedTab, setSelectedTab] = useState(tabs.indexOf(initialTab));
 
   useEffect(() => {
+    console.log('post data', posts)
     const currentTab = searchParams.get("tab") as string;
     if (currentTab && tabs.includes(currentTab)) {
       setSelectedTab(tabs.indexOf(currentTab));
     }
-  }, [searchParams, tabs]);
+  }, [searchParams, tabs, posts]);
 
   const handleTabChange = (index: number) => {
     const tab = tabs[index];
@@ -57,8 +58,8 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
     setSelectedTab(index);
   };
 
-  const finalCourses = courses;
-  const finalPosts = posts;
+  // const courses = courses;
+  // const posts = posts;
 
   return (
     <TabGroup selectedIndex={selectedTab} onChange={handleTabChange}>
@@ -87,8 +88,8 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
               [...Array(3)].map((_, index) => (
                 <SkeletonLoader key={index} type="course" />
               ))
-            ) : finalCourses && finalCourses?.length > 0 ? (
-              finalCourses.map((course) => (
+            ) : courses && courses?.length > 0 ? (
+              courses.map((course) => (
                 <div key={course.id} className="flex flex-col">
                   <a href={`/courses/${course.id}`}>
                     <div className=" inset-0 flex items-center justify-center bg-gray-100 p-1 rounded-md">
@@ -136,10 +137,10 @@ const ProfileTabs: React.FC<ProfileTabsProps> = ({
               [...Array(3)].map((_, index) => (
                 <SkeletonLoader key={index} type="post" />
               ))
-            ) : finalPosts && finalPosts?.length > 0 ? (
-              finalPosts.map((post, index) => (
-                <PostLink postId={Number(post.id)} key={index}>
-                  {post.mediaResource && post.mediaResource.length > 0 && (
+            ) : posts && posts?.length > 0 ? (
+              posts?.map((post: Post, index) => (
+                <PostLink postId={Number(post?.id)} key={index}>
+                  {post?.mediaResource && post?.mediaResource?.length > 0 && (
                     <div>
                       {(() => {
                         const media = post.mediaResource[0]; // Access the first item
