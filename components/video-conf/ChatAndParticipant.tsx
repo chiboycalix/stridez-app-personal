@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import ChatMessage from './ChatMessage';
 import Input from '@/components/ui/Input';
@@ -7,20 +7,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
 import { ChatEmpty } from '@/public/assets';
 import ParticipantList from './ParticipantList';
+import { useVideoConferencing } from '@/context/VideoConferencingContext';
 
-type Message = {
-  id: string;
-  user: {
-    name: string;
-    initials: string;
-  };
-  content: string;
-  timestamp: string;
-  isPinned?: boolean;
-  reactions?: { emoji: string; count: number }[];
-};
-const ChatAndParticipant = ({ onClose, localUser, remoteParticipants }: { onClose: () => void; localUser: any; remoteParticipants: any }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
+const ChatAndParticipant = ({ onClose, localUser, remoteParticipants }: {
+  onClose: () => void;
+  localUser: any;
+  remoteParticipants: any
+}) => {
+  const { chatMessages, sendChatMessage, username } = useVideoConferencing();
+  const [messageInput, setMessageInput] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const remoteUsersArray = Object.entries(remoteParticipants || {}).map(([uid, user]: any) => ({
     ...user,
@@ -32,6 +28,25 @@ const ChatAndParticipant = ({ onClose, localUser, remoteParticipants }: { onClos
     ...remoteUsersArray
   ];
 
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  const handleSendMessage = async () => {
+    if (!messageInput.trim()) return;
+
+    await sendChatMessage(messageInput, 'text');
+    setMessageInput('');
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
   return (
     <motion.div
       initial={{ x: "100%" }}
@@ -41,7 +56,6 @@ const ChatAndParticipant = ({ onClose, localUser, remoteParticipants }: { onClos
       className="absolute right-0 top-0 h-full w-full md:w-96 bg-[#11131A]"
     >
       <div className="h-full flex flex-col">
-        {/* Header with Tabs */}
         <div className="border-b border-[#191B23]">
           <div className="p-4">
             <div className="flex items-center justify-between w-full gap-4">
@@ -53,7 +67,7 @@ const ChatAndParticipant = ({ onClose, localUser, remoteParticipants }: { onClos
                         value="questions"
                         className="data-[state=active]:bg-[#272A31] data-[state=active]:text-white w-full"
                       >
-                        Questions
+                        Chat
                       </TabsTrigger>
                       <TabsTrigger
                         value="participants"
@@ -71,25 +85,38 @@ const ChatAndParticipant = ({ onClose, localUser, remoteParticipants }: { onClos
                   </button>
                 </div>
 
-                {/* Questions Content */}
+                {/* Chat Content */}
                 <TabsContent value="questions" className="h-[calc(100vh-15rem)]">
                   <div className="h-full flex flex-col">
                     <div className="flex-1 overflow-y-auto">
-                      {messages.length === 0 ? (
+                      {chatMessages.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-center px-4 text-gray-400">
                           <div className="mb-6">
                             <Image src={ChatEmpty} alt="ChatEmpty" />
                           </div>
                           <h3 className="text-xl font-semibold mb-2">Start a conversation</h3>
                           <p className="text-sm text-gray-500">
-                            There are no Question here yet. Start engaging your participant by sending a message.
+                            There are no messages here yet. Start the conversation by sending a message.
                           </p>
                         </div>
                       ) : (
                         <div className="p-4 space-y-6">
-                          {messages.map((message, index) => (
-                            <ChatMessage key={index} message={message} />
+                          {chatMessages.map((message) => (
+                            <ChatMessage
+                              key={message.id}
+                              message={{
+                                id: message.id,
+                                user: {
+                                  name: message.sender.name,
+                                  initials: message.sender.name.substring(0, 2).toUpperCase()
+                                },
+                                content: message.content,
+                                timestamp: new Date(message.timestamp).toLocaleTimeString(),
+                                isLocal: message.isLocal
+                              }}
+                            />
                           ))}
+                          <div ref={messagesEndRef} />
                         </div>
                       )}
                     </div>
@@ -111,6 +138,9 @@ const ChatAndParticipant = ({ onClose, localUser, remoteParticipants }: { onClos
                       </div>
                       <div className="relative mt-2">
                         <input
+                          value={messageInput}
+                          onChange={(e) => setMessageInput(e.target.value)}
+                          onKeyPress={handleKeyPress}
                           placeholder="Send a message..."
                           className="w-full bg-gray-800 text-white rounded-md px-4 py-3 pr-20 placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-700"
                         />
@@ -118,7 +148,10 @@ const ChatAndParticipant = ({ onClose, localUser, remoteParticipants }: { onClos
                           <button className="p-2 hover:bg-gray-700 rounded-full transition-colors text-gray-400 hover:text-white">
                             <Smile className="w-5 h-5" />
                           </button>
-                          <button className="p-2 hover:bg-gray-700 rounded-full transition-colors text-gray-400 hover:text-white">
+                          <button
+                            onClick={handleSendMessage}
+                            className="p-2 hover:bg-gray-700 rounded-full transition-colors text-gray-400 hover:text-white"
+                          >
                             <Send className="w-5 h-5 rotate-45" />
                           </button>
                         </div>
@@ -133,7 +166,7 @@ const ChatAndParticipant = ({ onClose, localUser, remoteParticipants }: { onClos
                     <div className='mb-6'>
                       <Input
                         variant='search'
-                        placeholder='Find what you’re looking for'
+                        placeholder="Find what you're looking for"
                         className='rounded-sm bg-[#191B23] text-[#8F9099]'
                         leftIcon={<Search />}
                         leftIconClassName='text-white'
@@ -142,7 +175,6 @@ const ChatAndParticipant = ({ onClose, localUser, remoteParticipants }: { onClos
                       />
                     </div>
                     <div className="space-y-4">
-                      {/* Other Participants */}
                       <div className="space-y-4">
                         <ParticipantList allParticipants={allParticipants} />
                       </div>
@@ -155,7 +187,7 @@ const ChatAndParticipant = ({ onClose, localUser, remoteParticipants }: { onClos
         </div>
       </div>
     </motion.div>
-  )
+  );
 };
 
 export default ChatAndParticipant;

@@ -18,6 +18,18 @@ interface RemoteParticipant {
   isScreenShare?: boolean;
 }
 
+interface ChatMessage {
+  id: string;
+  sender: {
+    uid: string;
+    name: string;
+  };
+  content: string;
+  timestamp: number;
+  type: 'text' | 'emoji';
+  isLocal: boolean;
+}
+
 interface VideoConferencingContextContextType {
   currentStep: number;
   setCurrentStep: (currentStep: number) => void;
@@ -58,8 +70,10 @@ interface VideoConferencingContextContextType {
   setBackgroundColor: any;
   setBackgroundBlurring: any;
   setBackgroundImage: any;
-  raisedHands: any,
-  toggleRaiseHand: () => void,
+  raisedHands: any;
+  toggleRaiseHand: () => void;
+  chatMessages: ChatMessage[];
+  sendChatMessage: (content: string, type: 'text' | 'emoji') => Promise<void>;
 }
 
 let rtcClient: IAgoraRTCClient;
@@ -99,6 +113,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     isLocal: boolean;
   } | null>(null);
   const [raisedHands, setRaisedHands] = useState<Record<string, boolean>>({});
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
   useEffect(() => {
     AgoraRTC.setLogLevel(4);
@@ -169,6 +184,19 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
               ...prev,
               [uid]: message.isRaised
             }));
+            break;
+          case 'chat':
+            setChatMessages(prev => [...prev, {
+              id: `${message.timestamp}-${uid}`,
+              sender: {
+                uid: uid,
+                name: message.senderName
+              },
+              content: message.content,
+              timestamp: message.timestamp,
+              type: message.messageType,
+              isLocal: String(uid) === String(meetingConfig.uid)
+            }]);
             break;
         }
       } catch (error) {
@@ -700,7 +728,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   const setBackgroundImage = async (imgSrc: any) => {
     const imgElement = document.createElement('img');
     imgElement.onload = async () => {
-      let processor = await getProcessorInstance();
+      const processor = await getProcessorInstance();
       try {
         processor.setOptions({ type: 'img', source: imgElement });
         await processor.enable();
@@ -1391,6 +1419,39 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     }
   }, [remoteParticipants]);
 
+  const sendChatMessage = async (content: string, type: 'text' | 'emoji' = 'text') => {
+    if (!rtmChannel || !content.trim()) return;
+
+    try {
+      const messageData = {
+        type: 'chat',
+        uid: meetingConfig.uid,
+        senderName: username,
+        content: content,
+        timestamp: Date.now(),
+        messageType: type
+      };
+
+      await sendRateLimitedMessage({
+        text: JSON.stringify(messageData)
+      });
+
+      setChatMessages(prev => [...prev, {
+        id: `${messageData.timestamp}-${meetingConfig.uid}`,
+        sender: {
+          uid: String(meetingConfig.uid),
+          name: username
+        },
+        content: content,
+        timestamp: messageData.timestamp,
+        type: type,
+        isLocal: true
+      }]);
+    } catch (error) {
+      console.error('Error sending chat message:', error);
+    }
+  };
+
   const leaveCall = useCallback(async () => {
     try {
       if (isSharingScreen === String(meetingConfig.uid)) {
@@ -1413,6 +1474,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         await rtcScreenShareClient.leave();
         rtcScreenShareClient.removeAllListeners();
       }
+      setChatMessages([]);
       setHasJoinedMeeting(false);
       setIsSharingScreen(null);
       setScreenSharingUser(null);
@@ -1433,7 +1495,8 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     isSharingScreen,
     meetingConfig.uid,
     handleEndScreenShare,
-    releaseMediaResources
+    releaseMediaResources,
+    localUserTrack?.videoTrack
   ]);
 
   const disconnectFromMessaging = useCallback(async () => {
@@ -1553,6 +1616,8 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         setBackgroundImage,
         raisedHands,
         toggleRaiseHand,
+        chatMessages,
+        sendChatMessage,
       }}>
       {children}
     </VideoConferencingContext.Provider>
