@@ -1,24 +1,40 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-"use client"
-import React, { useEffect, useState } from 'react';
-import IconButton from './IconButton';
-import CallOptionsMenu from './CallOptionsMenu';
-import VolumeControlPopup from './VolumeControlPopup';
-import JoinRequestNotification from './JoinRequestNotification';
-import EndCallScreen from './EndCallScreen';
-import EmojiPopup from './EmojiPopup';
-import { VideoGrid } from './VideoGrid';
-import ChatAndParticipant from './ChatAndParticipant';
-import InvitePeopleTab from './InvitePeople';
-import { X, Mic, MoreVertical, Copy, Plus, MicOff, Video, Share, MessageSquare, Menu, Users, Smile, SquareArrowOutUpRight, VideoOff, Hand } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { AnimatePresence } from 'framer-motion';
-import { useVideoConferencing } from '@/context/VideoConferencingContext';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { generalHelpers } from '@/helpers';
-import { Button } from '@/components/ui/button';
-import { ROUTES } from '@/constants/routes';
-import BackgroundColorPicker from './BackgroundColorPicker';
+"use client";
+import React, { useEffect, useState } from "react";
+import IconButton from "./IconButton";
+import CallOptionsMenu from "./CallOptionsMenu";
+import VolumeControlPopup from "./VolumeControlPopup";
+import JoinRequestNotification from "./JoinRequestNotification";
+import EndCallScreen from "./EndCallScreen";
+import EmojiPopup from "./EmojiPopup";
+import { VideoGrid } from "./VideoGrid";
+import ChatAndParticipant from "./ChatAndParticipant";
+import InvitePeopleTab from "./InvitePeople";
+import {
+  X,
+  Mic,
+  MoreVertical,
+  Copy,
+  Plus,
+  MicOff,
+  Video,
+  Share,
+  MessageSquare,
+  Menu,
+  Users,
+  Smile,
+  SquareArrowOutUpRight,
+  VideoOff,
+  Hand,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { AnimatePresence } from "framer-motion";
+import { useVideoConferencing } from "@/context/VideoConferencingContext";
+import { useRouter, useSearchParams } from "next/navigation";
+import { generalHelpers } from "@/helpers";
+import { Button } from "@/components/ui/button";
+import { ROUTES } from "@/constants/routes";
+import BackgroundColorPicker from "./BackgroundColorPicker";
 
 type JoinRequest = {
   id: string;
@@ -31,12 +47,17 @@ const LiveStreamInterface = () => {
   const [hasEndedCall, setHasEndedCall] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
-  const [optionsAnchorRect, setOptionsAnchorRect] = useState<DOMRect | null>(null);
-  const [colorPickeranchorRect, setColorPickeranchorRect] = useState<DOMRect | null>(null);
+  const [optionsAnchorRect, setOptionsAnchorRect] = useState<DOMRect | null>(
+    null
+  );
+  const [colorPickeranchorRect, setColorPickeranchorRect] =
+    useState<DOMRect | null>(null);
   const [showEmojiPopup, setShowEmojiPopup] = useState(false);
   const [emojiAnchorRect, setEmojiAnchorRect] = useState<DOMRect | null>(null);
   const [showVolumePopup, setShowVolumePopup] = useState(false);
-  const [volumeAnchorRect, setVolumeAnchorRect] = useState<DOMRect | null>(null);
+  const [volumeAnchorRect, setVolumeAnchorRect] = useState<DOMRect | null>(
+    null
+  );
   const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
   const {
     isMicrophoneEnabled,
@@ -55,15 +76,15 @@ const LiveStreamInterface = () => {
     toggleRaiseHand,
     raisedHands,
   } = useVideoConferencing();
-  const router = useRouter()
+  const router = useRouter();
   const totalParticipants = Object.keys(remoteParticipants || {}).length + 1;
-  const [showColorPicker, setShowColorPicker] = useState(false)
+  const [showColorPicker, setShowColorPicker] = useState(false);
   const searchParams = useSearchParams();
   const username = searchParams.get("username");
   const isRaised = raisedHands[String(meetingConfig.uid)];
   const newRequest = {
-    id: 'unique-id',
-    name: 'Matthew'
+    id: "unique-id",
+    name: "Matthew",
   } as any;
 
   useEffect(() => {
@@ -88,7 +109,9 @@ const LiveStreamInterface = () => {
     );
   };
 
-  const handleVolumeControlClick = (event: React.MouseEvent<HTMLDivElement>) => {
+  const handleVolumeControlClick = (
+    event: React.MouseEvent<HTMLDivElement>
+  ) => {
     const buttonRect = event.currentTarget.getBoundingClientRect();
     setVolumeAnchorRect(buttonRect);
     setShowVolumePopup(!showVolumePopup);
@@ -96,11 +119,13 @@ const LiveStreamInterface = () => {
   const handleShowColorPicker = (event: React.MouseEvent<HTMLDivElement>) => {
     const buttonRect = event.currentTarget.getBoundingClientRect();
     setColorPickeranchorRect(buttonRect);
-    setShowColorPicker(!showColorPicker)
-  }
+    setShowColorPicker(!showColorPicker);
+  };
   const handleEndCall = async () => {
-    router.push(`${ROUTES.VIDEO_CONFERENCING.LEAVE_MEETING}?channelName=${channelName}`)
-    await leaveCall()
+    router.push(
+      `${ROUTES.VIDEO_CONFERENCING.LEAVE_MEETING}?channelName=${channelName}`
+    );
+    await leaveCall();
     setHasEndedCall(true);
     setShowInviteModal(false);
     setShowInvitePeople(false);
@@ -119,7 +144,7 @@ const LiveStreamInterface = () => {
   };
 
   const handleEmojiSelect = (emoji: string) => {
-    console.log('Selected emoji:', emoji);
+    console.log("Selected emoji:", emoji);
   };
 
   return (
@@ -128,30 +153,33 @@ const LiveStreamInterface = () => {
         {/* Top Bar */}
 
         {/* Main Video Area */}
-        <div className={cn(
-          "relative flex-1 rounded-md overflow-hidden",
-          showInvitePeople && "blur-sm"
-        )}>
-
+        <div
+          className={cn(
+            "relative flex-1 rounded-md overflow-hidden",
+            showInvitePeople && "blur-sm"
+          )}
+        >
           {hasEndedCall ? (
             <EndCallScreen />
           ) : (
             <>
               <div className="text-white flex h-full">
                 {/* Left Side - Only show when single participant */}
-                {totalParticipants === 1 && <div className="w-8 md:w-12 lg:w-28 flex flex-col justify-end p-2">
-                  <span className="text-xs md:text-sm lg:text-base">
-                    {totalParticipants === 1 && generalHelpers.convertFromSlug(username!)}
-                  </span>
-                </div>
-                }
+                {totalParticipants === 1 && (
+                  <div className="w-8 md:w-12 lg:w-28 flex flex-col justify-end p-2">
+                    <span className="text-xs md:text-sm lg:text-base">
+                      {totalParticipants === 1 &&
+                        generalHelpers.convertFromSlug(username!)}
+                    </span>
+                  </div>
+                )}
                 {/* center side video grid */}
                 <div className="flex-1">
                   <VideoGrid
                     localUser={{
                       ...localUserTrack,
                       videoEnabled: isCameraEnabled,
-                      audioEnabled: isMicrophoneEnabled
+                      audioEnabled: isMicrophoneEnabled,
                     }}
                     remoteParticipants={remoteParticipants}
                     showControls={true}
@@ -159,10 +187,10 @@ const LiveStreamInterface = () => {
                 </div>
 
                 {/* Right Side - Only show when single participant */}
-                {
-                  totalParticipants === 1 && <div className="w-8 md:w-12 lg:w-28 flex flex-col justify-between items-end p-2">
+                {totalParticipants === 1 && (
+                  <div className="w-8 md:w-12 lg:w-28 flex flex-col justify-between items-end p-2">
                     {
-                      (<>
+                      <>
                         <div className="cursor-pointer hover:bg-gray-800/50 p-1 md:p-1.5 lg:p-2 rounded-lg transition-colors">
                           {isMicrophoneEnabled ? (
                             <Mic className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5" />
@@ -179,11 +207,10 @@ const LiveStreamInterface = () => {
                         >
                           <MoreVertical className="w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5" />
                         </div>
-                      </>)
+                      </>
                     }
                   </div>
-                }
-
+                )}
               </div>
 
               <AnimatePresence>
@@ -193,7 +220,7 @@ const LiveStreamInterface = () => {
                     localUser={{
                       videoTrack: localUserTrack?.videoTrack,
                       audioTrack: localUserTrack?.audioTrack,
-                      uid: meetingConfig?.uid
+                      uid: meetingConfig?.uid,
                     }}
                     remoteParticipants={remoteParticipants}
                   />
@@ -206,7 +233,9 @@ const LiveStreamInterface = () => {
           {showInviteModal && !hasEndedCall && (
             <div className="absolute top-2 left-2 md:top-4 md:left-4 bg-white rounded-lg p-2 md:p-3 lg:p-4 w-[90%] md:w-96 max-w-[95vw] md:max-w-md">
               <div className="flex justify-between items-center mb-2 md:mb-3">
-                <h3 className="font-semibold text-sm md:text-base">You&apos;re set!</h3>
+                <h3 className="font-semibold text-sm md:text-base">
+                  You&apos;re set!
+                </h3>
                 <button
                   onClick={() => setShowInviteModal(false)}
                   className="hover:bg-gray-100 p-1 rounded-full transition-colors"
@@ -219,7 +248,7 @@ const LiveStreamInterface = () => {
               </p>
               <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 mb-2 md:mb-3">
                 <div className="flex-1 bg-primary-100 rounded-lg p-2 text-xs md:text-sm break-all">
-                  adewale.stridez.com/instant
+                {`${window.location.origin}${ROUTES.VIDEO_CONFERENCING.ROOT}/${channelName}`}
                 </div>
                 <button className="flex items-center justify-center gap-1 text-xs md:text-sm bg-primary-100 px-2 py-2 rounded-lg hover:bg-primary-200 transition-colors">
                   <Copy className="w-3 h-3 md:w-4 md:h-4" />
@@ -238,19 +267,20 @@ const LiveStreamInterface = () => {
         </div>
 
         {/* Request to Join Call */}
-        {joinRequests.map((request, index) => (
-          <JoinRequestNotification
-            key={index}
-            requesterName={request.name}
-            onAllow={() => handleAllow(request.id)}
-            onDeny={() => handleDeny(request.id)}
-            onClose={() =>
-              setJoinRequests(requests =>
-                requests.filter(r => r.id !== request.id)
-              )
-            }
-          />
-        ))}
+        {joinRequests &&
+          joinRequests?.map((request, index) => (
+            <JoinRequestNotification
+              key={index}
+              requesterName={request.name}
+              onAllow={() => handleAllow(request.id)}
+              onDeny={() => handleDeny(request.id)}
+              onClose={() =>
+                setJoinRequests((requests) =>
+                  requests.filter((r) => r.id !== request.id)
+                )
+              }
+            />
+          ))}
 
         {/* Invite People Modal */}
         {showInvitePeople && !hasEndedCall && (
@@ -273,33 +303,56 @@ const LiveStreamInterface = () => {
         )}
 
         {/* Bottom Controls */}
-        <div className={cn(
-          "mt-4 md:mt-8 relative isolate", // Added isolate
-          showInvitePeople && "blur-sm"
-        )}>
+        <div
+          className={cn(
+            "mt-4 md:mt-8 relative isolate", // Added isolate
+            showInvitePeople && "blur-sm"
+          )}
+        >
           <div className="overflow-x-auto pb-4 md:pb-0">
             <div className="flex items-center justify-between min-w-[640px] md:min-w-0 gap-4 md:grid md:grid-cols-3 md:gap-2 lg:gap-4">
               <div className="flex items-center gap-1 md:gap-2">
                 <IconButton
-                  leftIcon={isMicrophoneEnabled ?
-                    <Mic size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" /> :
-                    <MicOff size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />
+                  leftIcon={
+                    isMicrophoneEnabled ? (
+                      <Mic size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />
+                    ) : (
+                      <MicOff
+                        size={14}
+                        className="md:w-4 md:h-4 lg:w-5 lg:h-5"
+                      />
+                    )
                   }
                   showDivider
                   onLeftClick={toggleMicrophone}
-                  onRightClick={() => { }}
-                  tooltip={isMicrophoneEnabled ? "Mute microphone" : "Unmute microphone"}
+                  onRightClick={() => {}}
+                  tooltip={
+                    isMicrophoneEnabled
+                      ? "Mute microphone"
+                      : "Unmute microphone"
+                  }
                   rightTooltip="Microphone settings"
                 />
                 <IconButton
-                  leftIcon={isCameraEnabled ?
-                    <Video size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" /> :
-                    <VideoOff size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />
+                  leftIcon={
+                    isCameraEnabled ? (
+                      <Video
+                        size={14}
+                        className="md:w-4 md:h-4 lg:w-5 lg:h-5"
+                      />
+                    ) : (
+                      <VideoOff
+                        size={14}
+                        className="md:w-4 md:h-4 lg:w-5 lg:h-5"
+                      />
+                    )
                   }
                   showDivider
                   onLeftClick={toggleCamera}
-                  onRightClick={() => { }}
-                  tooltip={isCameraEnabled ? "Turn off camera" : "Turn on camera"}
+                  onRightClick={() => {}}
+                  tooltip={
+                    isCameraEnabled ? "Turn off camera" : "Turn on camera"
+                  }
                   rightTooltip="Camera settings"
                 />
               </div>
@@ -307,32 +360,55 @@ const LiveStreamInterface = () => {
               {/* Center section */}
               <div className="flex items-center justify-center gap-1 md:gap-2">
                 <IconButton
-                  leftIcon={isSharingScreen ? <Share size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5 rotate-180" /> : <Share size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />
+                  leftIcon={
+                    isSharingScreen ? (
+                      <Share
+                        size={14}
+                        className="md:w-4 md:h-4 lg:w-5 lg:h-5 rotate-180"
+                      />
+                    ) : (
+                      <Share
+                        size={14}
+                        className="md:w-4 md:h-4 lg:w-5 lg:h-5"
+                      />
+                    )
                   }
                   showDivider
-                  onLeftClick={isSharingScreen ? handleEndScreenShare : handleShareScreen}  // Use the new handler
-                  onRightClick={() => { }}
+                  onLeftClick={
+                    isSharingScreen ? handleEndScreenShare : handleShareScreen
+                  } // Use the new handler
+                  onRightClick={() => {}}
                   className=""
                   tooltip="Share screen"
                   rightTooltip="Screen sharing settings"
                 />
                 <IconButton
-                  leftIcon={<SquareArrowOutUpRight size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />}
+                  leftIcon={
+                    <SquareArrowOutUpRight
+                      size={14}
+                      className="md:w-4 md:h-4 lg:w-5 lg:h-5"
+                    />
+                  }
                   onLeftClick={handleShowColorPicker}
                   className=""
                   tooltip="set background"
                   rightTooltip=""
                 />
                 <IconButton
-                  leftIcon={<Smile size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />}
+                  leftIcon={
+                    <Smile size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />
+                  }
                   onLeftClick={handleEmojiClick}
-                  className={cn(
-                    showEmojiPopup && "bg-gray-100"
-                  )}
+                  className={cn(showEmojiPopup && "bg-gray-100")}
                   tooltip="Reactions"
                 />
                 <IconButton
-                  leftIcon={<Share size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5 -rotate-90" />}
+                  leftIcon={
+                    <Share
+                      size={14}
+                      className="md:w-4 md:h-4 lg:w-5 lg:h-5 -rotate-90"
+                    />
+                  }
                   showDivider
                   onLeftClick={handleEndCall}
                   className="bg-red-600 text-white hover:bg-red-600"
@@ -341,9 +417,14 @@ const LiveStreamInterface = () => {
                   rightTooltip="Leave meeting options"
                 />
                 <IconButton
-                  leftIcon={<Hand size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />}
+                  leftIcon={
+                    <Hand size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />
+                  }
                   onLeftClick={toggleRaiseHand}
-                  iconClass={cn("hover:bg-primary-600 text-white", isRaised ? "bg-primary-500" : "")}
+                  iconClass={cn(
+                    "hover:bg-primary-600 text-white",
+                    isRaised ? "bg-primary-500" : ""
+                  )}
                   tooltip={isRaised ? "Lower Hand" : "Raise Hand"}
                 />
               </div>
@@ -351,13 +432,20 @@ const LiveStreamInterface = () => {
               {/* Right section */}
               <div className="flex items-center justify-end gap-1 md:gap-2">
                 <IconButton
-                  leftIcon={<MessageSquare size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />}
+                  leftIcon={
+                    <MessageSquare
+                      size={14}
+                      className="md:w-4 md:h-4 lg:w-5 lg:h-5"
+                    />
+                  }
                   onLeftClick={() => setShowChat(!showChat)}
                   className={cn(showChat && "bg-primary-100 text-primary-900")}
                   tooltip="Toggle chat"
                 />
                 <IconButton
-                  leftIcon={<Users size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />}
+                  leftIcon={
+                    <Users size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />
+                  }
                   showDivider
                   rightIcon={totalParticipants}
                   onLeftClick={() => setShowChat(!showChat)}
@@ -367,11 +455,11 @@ const LiveStreamInterface = () => {
                   rightTooltip="Show all participants"
                 />
                 <IconButton
-                  leftIcon={<Menu size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />}
+                  leftIcon={
+                    <Menu size={14} className="md:w-4 md:h-4 lg:w-5 lg:h-5" />
+                  }
                   onLeftClick={handleOptionsClick}
-                  className={cn(
-                    showOptionsMenu && "bg-gray-100"
-                  )}
+                  className={cn(showOptionsMenu && "bg-gray-100")}
                   tooltip="More options"
                 />
               </div>
@@ -405,7 +493,6 @@ const LiveStreamInterface = () => {
           colorPickeranchorRect={colorPickeranchorRect}
         />
       }
-
     </div>
   );
 };
