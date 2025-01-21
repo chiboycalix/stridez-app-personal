@@ -1436,7 +1436,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         text: JSON.stringify(messageData)
       });
 
-      // Add message to local state
       setChatMessages(prev => [...prev, {
         id: `${messageData.timestamp}-${meetingConfig.uid}`,
         sender: {
