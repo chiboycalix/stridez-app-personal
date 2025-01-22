@@ -248,7 +248,7 @@ const LiveStreamInterface = () => {
               </p>
               <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 mb-2 md:mb-3">
                 <div className="flex-1 bg-primary-100 rounded-lg p-2 text-xs md:text-sm break-all">
-                  {`${window.location.origin}${ROUTES.VIDEO_CONFERENCING.ROOT}/${channelName}`}
+                  {`${window.location.origin}${ROUTES.VIDEO_CONFERENCING.MEETING}/${channelName}`}
                 </div>
                 {/* <button className="flex items-center justify-center gap-1 text-xs md:text-sm bg-primary-100 px-2 py-2 rounded-lg hover:bg-primary-200 transition-colors">
                   <Copy className="w-3 h-3 md:w-4 md:h-4" />
@@ -259,7 +259,7 @@ const LiveStreamInterface = () => {
                   className="flex items-center justify-center gap-1 text-xs md:text-sm bg-primary-100 px-2 py-2 rounded-lg hover:bg-primary-200 transition-colors"
                   onClick={() => {
                     navigator.clipboard.writeText(
-                      `${window.location.origin}${ROUTES.VIDEO_CONFERENCING.ROOT}/${channelName}`
+                      `${window.location.origin}${ROUTES.VIDEO_CONFERENCING.MEETING}/${channelName}`
                     );
                   }}
                 >
@@ -344,7 +344,7 @@ const LiveStreamInterface = () => {
                   }
                   showDivider
                   onLeftClick={toggleMicrophone}
-                  onRightClick={() => {}}
+                  onRightClick={() => { }}
                   tooltip={
                     isMicrophoneEnabled
                       ? "Mute microphone"
@@ -368,7 +368,7 @@ const LiveStreamInterface = () => {
                   }
                   showDivider
                   onLeftClick={toggleCamera}
-                  onRightClick={() => {}}
+                  onRightClick={() => { }}
                   tooltip={
                     isCameraEnabled ? "Turn off camera" : "Turn on camera"
                   }
@@ -396,7 +396,7 @@ const LiveStreamInterface = () => {
                   onLeftClick={
                     isSharingScreen ? handleEndScreenShare : handleShareScreen
                   } // Use the new handler
-                  onRightClick={() => {}}
+                  onRightClick={() => { }}
                   className=""
                   tooltip="Share screen"
                   rightTooltip="Screen sharing settings"

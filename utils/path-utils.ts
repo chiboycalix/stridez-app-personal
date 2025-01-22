@@ -20,7 +20,7 @@ export const LAYOUT_PATHS = [
   "/course/*",
   "/streaming/*",
   "/classroom/*",
-  "/video-conferencing/*",
+  "/meeting/*",
 ].filter((path) => !path.startsWith("/auth"));
 
 export const shouldUseMainLayout = (pathname: string): boolean => {

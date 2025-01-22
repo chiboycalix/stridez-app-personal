@@ -11,7 +11,7 @@ const protectedPaths = [
   "/posts",
   "/courses",
   "/streaming",
-  "/video-conferencing",
+  "/meeting",
   "/market-place",
   "/classroom",
   "/setup",

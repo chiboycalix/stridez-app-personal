@@ -15,7 +15,7 @@ export default function Schedule() {
     <div className="p-8 bg-white flex items-start justify-between">
       <div className="basis-3/12">
         <button
-          onClick={() => router.push("/video-conferencing")}
+          onClick={() => router.push("/meeting")}
           className="bg-gray-100 hover:text-gray-700 rounded-full p-2"
         >
           <X size={20} />

@@ -35,7 +35,7 @@ export default function VideoConferencing() {
 
         setChannelName(data.data.roomCode);
         router.push(
-          `${ROUTES.VIDEO_CONFERENCING.WAITING_ROOM}/${data.data.roomCode}?username=${currentUser?.profile?.firstName}`
+          `${ROUTES.VIDEO_CONFERENCING.MEETING}/${data.data.roomCode}?username=${currentUser?.profile?.firstName}`
         );
       } else {
         showToast(
@@ -60,7 +60,7 @@ export default function VideoConferencing() {
   const handleJoinWaitingRoom = async () => {
     try {
       router.push(
-        `${ROUTES.VIDEO_CONFERENCING.WAITING_ROOM_CHANNEL(
+        `${ROUTES.VIDEO_CONFERENCING.MEETING_CHANNEL(
           channelName
         )}?username=${currentUser?.profile?.firstName}`
       );
