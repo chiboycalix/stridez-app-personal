@@ -126,7 +126,6 @@ const PostItem = ({ post }: PostItemType) => {
     if (liked !== null) {
       setIsLiked(JSON.parse(liked));
     }
-    console.log('heheheheh', post);
   }, [isLiked, post.id, ]);
 
   return (

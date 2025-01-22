@@ -250,13 +250,10 @@ const LiveStreamInterface = () => {
                 <div className="flex-1 bg-primary-100 rounded-lg p-2 text-xs md:text-sm break-all">
                   {`${window.location.origin}${ROUTES.VIDEO_CONFERENCING.ROOT}/${channelName}`}
                 </div>
-                {/* <button className="flex items-center justify-center gap-1 text-xs md:text-sm bg-primary-100 px-2 py-2 rounded-lg hover:bg-primary-200 transition-colors">
-                  <Copy className="w-3 h-3 md:w-4 md:h-4" />
-                  <span>Copy link</span>
-                </button> */}
-
+              </div>
+              <div className="flex items-center justify-evenly gap-2">
                 <Button
-                  className="flex items-center justify-center gap-1 text-xs md:text-sm bg-primary-100 px-2 py-2 rounded-lg hover:bg-primary-200 transition-colors"
+                  className="w-1/3 flex items-center justify-center gap-1 bg-indigo-600 text-white px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-indigo-700 transition-colors"
                   onClick={() => {
                     navigator.clipboard.writeText(
                       `${window.location.origin}${ROUTES.VIDEO_CONFERENCING.ROOT}/${channelName}`
@@ -274,13 +271,6 @@ const LiveStreamInterface = () => {
                   Invite
                 </Button>
               </div>
-              <Button
-                onClick={() => setShowInvitePeople(true)}
-                className="w-1/3 flex items-center justify-center gap-1 bg-indigo-600 text-white px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-indigo-700 transition-colors"
-              >
-                <Plus className="w-3 h-3 md:w-4 md:h-4 bg-white text-primary" />
-                Invite
-              </Button>
             </div>
           )}
         </div>

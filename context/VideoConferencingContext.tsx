@@ -1483,7 +1483,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       setSpeakingParticipants({});
       setMeetingStage("prepRoom");
       setRaisedHands({});
-      localUserTrack.videoTrack.unpipe();
+      localUserTrack?.videoTrack.unpipe();
       rtmChannel = null as any;
       rtmClient = null as any;
       rtcClient = null as any;
