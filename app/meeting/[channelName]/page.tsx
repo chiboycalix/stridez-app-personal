@@ -1,10 +1,10 @@
 'use client';
-import VideoInterface from "../../../../components/video-conf/VideoInterface";
 import PermissionModal from "@/components/video-conf/PermissionModal";
 import { useEffect, useState } from "react";
 import { useVideoConferencing } from "@/context/VideoConferencingContext";
 import { useParams, useSearchParams } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import VideoInterface from "@/components/video-conf/VideoInterface";
 
 export default function WaitingRoom() {
   const { initializeLocalMediaTracks } = useVideoConferencing();

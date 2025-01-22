@@ -27,7 +27,7 @@ const LeaveMeeting = () => {
           <p className="text-gray-400 mb-2 text-sm">Left by mistake?</p>
           <Button
             onClick={() =>
-              router.push(`${ROUTES.VIDEO_CONFERENCING.WAITING_ROOM_CHANNEL(channelName!)}?username=${currentUser?.profile?.firstName}`)}
+              router.push(`${ROUTES.VIDEO_CONFERENCING.MEETING_CHANNEL(channelName!)}?username=${currentUser?.profile?.firstName}`)}
             className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-2 rounded-lg flex items-center gap-2"
           >
             <Share className="w-4 h-4" />

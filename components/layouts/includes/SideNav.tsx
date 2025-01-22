@@ -144,7 +144,7 @@ const Sidebar = () => {
                 colorString="#000000"
                 activeColorString="#37169C"
                 sizeString={24}
-                path="/video-conferencing"
+                path="/meeting"
                 onClose={close}
               />
 

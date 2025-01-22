@@ -20,13 +20,11 @@ export const ROUTES = {
 
   STREAMING: (id: string) => `/streaming/${id}`,
   VIDEO_CONFERENCING: {
-    ROOT: "/video-conferencing",
-    WAITING_ROOM: "/video-conferencing/waiting-room",
-    WAITING_ROOM_CHANNEL: (channelName: string) =>
-      `/video-conferencing/waiting-room/${channelName}`,
-    SCHEDULE: "/video-conferencing/schedule",
-    LIVE: "/video-conferencing/live",
-    LEAVE_MEETING: "/video-conferencing/leave-meeting",
+    MEETING: "/meeting",
+    MEETING_CHANNEL: (channelName: string) => `/meeting/${channelName}`,
+    SCHEDULE: "/meeting/schedule",
+    LIVE: "/meeting/live",
+    LEAVE_MEETING: "/meeting/leave-meeting",
   },
 
   MARKETPLACE: "/market-place",

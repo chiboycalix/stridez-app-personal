@@ -248,7 +248,7 @@ const LiveStreamInterface = () => {
               </p>
               <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 mb-2 md:mb-3">
                 <div className="flex-1 bg-primary-100 rounded-lg p-2 text-xs md:text-sm break-all">
-                  {`${window.location.origin}${ROUTES.VIDEO_CONFERENCING.ROOT}/${channelName}`}
+                  {`${window.location.origin}${ROUTES.VIDEO_CONFERENCING.MEETING}/${channelName}`}
                 </div>
               </div>
               <div className="flex items-center justify-evenly gap-2">
@@ -256,7 +256,7 @@ const LiveStreamInterface = () => {
                   className="w-1/3 flex items-center justify-center gap-1 bg-indigo-600 text-white px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-indigo-700 transition-colors"
                   onClick={() => {
                     navigator.clipboard.writeText(
-                      `${window.location.origin}${ROUTES.VIDEO_CONFERENCING.ROOT}/${channelName}`
+                      `${window.location.origin}${ROUTES.VIDEO_CONFERENCING.MEETING}/${channelName}`
                     );
                   }}
                 >
@@ -334,7 +334,7 @@ const LiveStreamInterface = () => {
                   }
                   showDivider
                   onLeftClick={toggleMicrophone}
-                  onRightClick={() => {}}
+                  onRightClick={() => { }}
                   tooltip={
                     isMicrophoneEnabled
                       ? "Mute microphone"
@@ -358,7 +358,7 @@ const LiveStreamInterface = () => {
                   }
                   showDivider
                   onLeftClick={toggleCamera}
-                  onRightClick={() => {}}
+                  onRightClick={() => { }}
                   tooltip={
                     isCameraEnabled ? "Turn off camera" : "Turn on camera"
                   }
@@ -386,7 +386,7 @@ const LiveStreamInterface = () => {
                   onLeftClick={
                     isSharingScreen ? handleEndScreenShare : handleShareScreen
                   } // Use the new handler
-                  onRightClick={() => {}}
+                  onRightClick={() => { }}
                   className=""
                   tooltip="Share screen"
                   rightTooltip="Screen sharing settings"
