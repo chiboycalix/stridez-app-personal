@@ -10,6 +10,8 @@ import { AnimatePresence } from 'framer-motion';
 import { StreamPlayer } from './StreamPlayer';
 import LiveStreamInterface from './LiveStreamInterface';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/context/AuthContext';
+
 
 export default function VideoInterface({
   allowMicrophoneAndCamera,
@@ -20,6 +22,7 @@ export default function VideoInterface({
   channelName: string;
   username: string
 }) {
+  const { getCurrentUser } = useAuth();
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [handleSelectMicrophone, setHandleSelectMicrophone] = useState(false);
   const {
@@ -136,7 +139,7 @@ export default function VideoInterface({
               <div className="flex flex-col sm:flex-row gap-4 justify-between w-full mt-4">
                 <div className='sm:basis-10/12 w-full'>
                   <Input
-                    placeholder="Ore Aisha"
+                    placeholder={username || "Enter your username"}
                     className="w-full py-2"
                     value={username}
                     onChange={(e) => { }}

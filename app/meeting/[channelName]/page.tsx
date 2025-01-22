@@ -5,14 +5,20 @@ import { useVideoConferencing } from "@/context/VideoConferencingContext";
 import { useParams, useSearchParams } from "next/navigation";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import VideoInterface from "@/components/video-conf/VideoInterface";
+import { useAuth } from "@/context/AuthContext";
 
 export default function WaitingRoom() {
   const { initializeLocalMediaTracks } = useVideoConferencing();
   const [showPermissionPopup, setShowPermissionPopup] = useState(true);
   const [hasPermissions, setHasPermissions] = useState(false);
-  const params = useParams()
-  const searchParams = useSearchParams();
-  const username = searchParams.get("username");
+  const params = useParams();
+  // const searchParams = useSearchParams();
+  const {getCurrentUser} = useAuth();
+  // const username = searchParams.get("username");
+  const username = getCurrentUser()?.username;
+
+  console.log('username:',getCurrentUser());
+
 
   const handleAllowPermissions = async () => {
     try {
