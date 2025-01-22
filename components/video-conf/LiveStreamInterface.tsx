@@ -10,6 +10,7 @@ import EmojiPopup from "./EmojiPopup";
 import { VideoGrid } from "./VideoGrid";
 import ChatAndParticipant from "./ChatAndParticipant";
 import InvitePeopleTab from "./InvitePeople";
+import { useToast } from "@/context/ToastContext";
 import {
   X,
   Mic,
@@ -36,6 +37,7 @@ import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
 import BackgroundColorPicker from "./BackgroundColorPicker";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 type JoinRequest = {
   id: string;
@@ -82,8 +84,9 @@ const LiveStreamInterface = () => {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const { getCurrentUser } = useAuth();
   const username = getCurrentUser()?.username;
-
   const isRaised = raisedHands[String(meetingConfig.uid)];
+  const { showToast } = useToast();
+
   const newRequest = {
     id: "unique-id",
     name: "Matthew",
@@ -118,16 +121,18 @@ const LiveStreamInterface = () => {
     setVolumeAnchorRect(buttonRect);
     setShowVolumePopup(!showVolumePopup);
   };
+
   const handleShowColorPicker = (event: React.MouseEvent<HTMLDivElement>) => {
     const buttonRect = event.currentTarget.getBoundingClientRect();
     setColorPickeranchorRect(buttonRect);
     setShowColorPicker(!showColorPicker);
   };
+
   const handleEndCall = async () => {
+    await leaveCall();
     router.push(
       `${ROUTES.VIDEO_CONFERENCING.LEAVE_MEETING}?channelName=${channelName}`
     );
-    await leaveCall();
     setHasEndedCall(true);
     setShowInviteModal(false);
     setShowInvitePeople(false);
@@ -257,12 +262,13 @@ const LiveStreamInterface = () => {
                 <Button
                   className="w-1/3 flex items-center justify-center gap-1 bg-indigo-600 text-white px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-indigo-700 transition-colors"
                   onClick={() => {
+                    toast.success("Meeting Link copied!")
                     navigator.clipboard.writeText(
                       `${window.location.origin}${ROUTES.VIDEO_CONFERENCING.MEETING}/${channelName}`
                     );
                   }}
                 >
-                  <span>Copy link</span>
+                  Copy link
                 </Button>
 
                 <Button
@@ -387,7 +393,7 @@ const LiveStreamInterface = () => {
                   showDivider
                   onLeftClick={
                     isSharingScreen ? handleEndScreenShare : handleShareScreen
-                  } // Use the new handler
+                  }
                   onRightClick={() => { }}
                   className=""
                   tooltip="Share screen"

@@ -7,6 +7,7 @@ import { WebSocketProvider } from "@/context/WebSocket";
 import { Manrope } from "next/font/google";
 import { VideoConferencingProvider } from "@/context/VideoConferencingContext";
 import { ToastProvider } from "@/context/ToastContext";
+import { Toaster } from "@/components/ui/sonner";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -28,6 +29,7 @@ export default function RootLayout({
                 <PostProvider>
                   <VideoConferencingProvider>
                     <VideoPlaybackProvider>{children}</VideoPlaybackProvider>
+                    <Toaster richColors expand />
                   </VideoConferencingProvider>
                 </PostProvider>
               </ToastProvider>
