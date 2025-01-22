@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface EmojiPickerProps {
   isOpen: boolean;
   onClose: () => void;
-  anchorRect: DOMRect | null;
+  emojiPickerAnchorRect: DOMRect | null;
   onEmojiSelect: (emoji: string) => void;
 }
 
@@ -15,12 +15,12 @@ const emojis = [
   '😎', '🥰', '😄', '🤗', '😅', '🙂'
 ];
 
-const EmojiPicker: React.FC<EmojiPickerProps> = ({ isOpen, onClose, anchorRect, onEmojiSelect }) => {
-  if (!anchorRect) return null;
+const EmojiPicker: React.FC<EmojiPickerProps> = ({ isOpen, onClose, emojiPickerAnchorRect, onEmojiSelect }) => {
+  if (!emojiPickerAnchorRect) return null;
 
   const menuPosition = {
-    bottom: window.innerHeight - anchorRect.top + 10,
-    right: window.innerWidth - anchorRect.right + 10,
+    bottom: window.innerHeight - emojiPickerAnchorRect.top + 10,
+    right: window.innerWidth - emojiPickerAnchorRect.right + 10,
   };
 
   const handleEmojiClick = (emoji: string) => {

@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { ChatEmpty } from '@/public/assets';
 import ParticipantList from './ParticipantList';
 import { useVideoConferencing } from '@/context/VideoConferencingContext';
+import EmojiPicker from './EmojiPicker';
 
 const ChatAndParticipant = ({ onClose, localUser, remoteParticipants }: {
   onClose: () => void;
@@ -17,6 +18,8 @@ const ChatAndParticipant = ({ onClose, localUser, remoteParticipants }: {
   const { chatMessages, sendChatMessage, username } = useVideoConferencing();
   const [messageInput, setMessageInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [emojiAnchorRect, setEmojiAnchorRect] = useState<DOMRect | null>(null)
 
   const remoteUsersArray = Object.entries(remoteParticipants || {}).map(([uid, user]: any) => ({
     ...user,
@@ -46,6 +49,17 @@ const ChatAndParticipant = ({ onClose, localUser, remoteParticipants }: {
       handleSendMessage();
     }
   };
+
+  const handleOpenEmojiPicker = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const buttonRect = event.currentTarget.getBoundingClientRect();
+    setEmojiAnchorRect(buttonRect);
+    setShowEmojiPicker(true)
+  }
+
+  const handleSelectEmoji = (emoji: string) => {
+    console.log({ emoji })
+    setMessageInput(prev => prev + emoji);
+  }
 
   return (
     <motion.div
@@ -123,18 +137,7 @@ const ChatAndParticipant = ({ onClose, localUser, remoteParticipants }: {
 
                     <div className="p-4 border-t border-gray-800">
                       <div className="flex items-center gap-2">
-                        <div className="px-0 py-1 rounded-md text-white text-sm flex items-center gap-2">
-                          <span>To</span>
-                          <div className="flex items-center gap-1 bg-blue-600 px-2 py-1 rounded-sm cursor-pointer">
-                            <div className="w-4 h-4 rounded-sm flex items-center justify-center">
-                              <Users className="w-3 h-3" />
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <span className="text-sm">Everyone</span>
-                              <ChevronRight size={16} />
-                            </div>
-                          </div>
-                        </div>
+
                       </div>
                       <div className="relative mt-2">
                         <input
@@ -145,7 +148,9 @@ const ChatAndParticipant = ({ onClose, localUser, remoteParticipants }: {
                           className="w-full bg-gray-800 text-white rounded-md px-4 py-3 pr-20 placeholder:text-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-700"
                         />
                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                          <button className="p-2 hover:bg-gray-700 rounded-full transition-colors text-gray-400 hover:text-white">
+                          <button
+                            onClick={handleOpenEmojiPicker}
+                            className="p-2 hover:bg-gray-700 rounded-full transition-colors text-gray-400 hover:text-white">
                             <Smile className="w-5 h-5" />
                           </button>
                           <button
@@ -185,6 +190,14 @@ const ChatAndParticipant = ({ onClose, localUser, remoteParticipants }: {
             </div>
           </div>
         </div>
+
+        <EmojiPicker
+          isOpen={showEmojiPicker}
+          onClose={() => setShowEmojiPicker(false)}
+          onEmojiSelect={handleSelectEmoji}
+          emojiPickerAnchorRect={emojiAnchorRect}
+        />
+
       </div>
     </motion.div>
   );
