@@ -489,7 +489,7 @@ const LiveStreamInterface = () => {
         isOpen={showOptionsMenu}
         onClose={() => setShowOptionsMenu(false)}
         anchorRect={optionsAnchorRect}
-        setShowInvitePeople={setShowInvitePeople}
+        setShowInvitePeople={setShowInviteModal}
       />
       <EmojiPopup
         isOpen={showEmojiPopup}

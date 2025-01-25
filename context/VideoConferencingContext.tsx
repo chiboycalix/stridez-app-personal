@@ -372,7 +372,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       const fetchAgoraData = async () => {
         try {
           const rtcData = await agoraGetAppData(channelName);
-          const { joinRoom, client } = rtcData;
+          const { client } = rtcData;
 
           setMeetingConfig((prev) => ({
             ...prev,

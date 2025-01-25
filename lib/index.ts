@@ -1,6 +1,7 @@
 import Cookies from "js-cookie";
 
 export const fetchToken = async (url: string) => {
+  console.log(Cookies.get("accessToken"), "Cookies.get");
   const response = await fetch(url, {
     method: "GET",
     headers: {
@@ -17,7 +18,7 @@ export const fetchToken = async (url: string) => {
 };
 
 export const agoraGetAppData = async (channel: string) => {
-  const initUrl = `https://app.stridez.ca/api/v1/rooms/join-meeting/${channel}`;
+  const initUrl = `${process.env.NEXT_PUBLIC_BASEURL}/rooms/join-meeting/${channel}`;
   const rtcData = await fetchToken(initUrl);
   return rtcData;
 };

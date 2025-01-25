@@ -26,6 +26,7 @@ export default function VideoConferencing() {
   const handleCreateInstantMeeting = async () => {
     try {
       const data = await MEETINGS_API.createInstantMeeting();
+
       if (data.code === STATUS_CODES.CREATED) {
         showToast(
           'success',
