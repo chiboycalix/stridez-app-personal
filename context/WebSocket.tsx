@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { io, Socket } from "socket.io-client";
 import Cookies from "js-cookie";
+import { webSocketUrl } from "@/utils/constant";
 
 // Define the WebSocket context type
 interface WebSocketContextType {
@@ -32,7 +33,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
   useEffect(() => {
     const token = `Bearer ${Cookies.get("accessToken")}`;
-    const socket = io(`https://app.stridez.ca`, {
+    const socket = io(webSocketUrl, {
       autoConnect: true,
       transports: ["websocket", "polling"],
       withCredentials: true,
