@@ -73,51 +73,80 @@ export function ParticipantVideo({ participant, customClasses = '' }: any) {
 export function RegularGrid({ participants }: any) {
   const count = participants.length;
 
+  const getGridDimensions = () => {
+    const aspectRatio = 16 / 9;
+    const maxParticipantsPerRow = 3;
+    // Increase padding for better spacing
+    const padding = 48;
+    const containerWidth = window.innerWidth - padding;
+    const containerHeight = window.innerHeight - padding;
+
+    // Reduce width slightly to ensure full visibility
+    const totalGapWidth = (maxParticipantsPerRow - 1) * 16; // Increased gap
+    const availableWidth = containerWidth - totalGapWidth;
+
+    let targetWidth = (availableWidth / maxParticipantsPerRow) - 8; // Subtract small buffer
+    let targetHeight = targetWidth / aspectRatio;
+
+    if (targetHeight > containerHeight * 0.8) {
+      targetHeight = containerHeight * 0.8;
+      targetWidth = targetHeight * aspectRatio;
+    }
+
+    return {
+      width: `${targetWidth}px`,
+      height: `${targetHeight}px`
+    };
+  };
+
+  const getMobileHeight = () => {
+    const viewportHeight = window.innerHeight;
+    const padding = 32;
+    const gap = (count - 1) * 8;
+    return (viewportHeight - padding - gap) / count;
+  };
+
   if (count === 1) {
     return (
-      <div className="h-full w-full flex items-center justify-center p-2 sm:p-4">
-        <div className="w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px]">
+      <div className="h-full w-full flex items-center justify-center">
+        <div className="w-full h-full">
           <ParticipantVideo participant={participants[0]} />
         </div>
       </div>
     );
   }
 
-  if (count === 2) {
-    return (
-      <div className="h-full w-full flex items-center justify-center p-2 sm:p-4">
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full">
-          {participants.map((participant: any) => (
-            <div key={participant.uid} className="w-full sm:w-1/2 h-[250px] sm:h-[350px] md:h-[400px] lg:h-[500px]">
-              <ParticipantVideo participant={participant} />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const dimensions = getGridDimensions();
 
   return (
-    <div className="h-full w-full p-2 sm:p-4">
-      <div className="sm:hidden h-full overflow-y-auto">
+    <div className="h-full w-full">
+      {/* Portrait Mode */}
+      <div className="landscape:hidden h-full overflow-y-auto">
         <div className="flex flex-col gap-2">
           {participants.map((participant: any) => (
-            <div key={participant.uid} className="w-full h-[250px] flex-shrink-0">
+            <div
+              key={participant.uid}
+              className="w-full flex-shrink-0"
+              style={{ height: `${getMobileHeight()}px` }}
+            >
               <ParticipantVideo participant={participant} />
             </div>
           ))}
         </div>
       </div>
 
-      <div className="hidden sm:block h-full">
-        <div className={`h-full ${count > 6 ? 'overflow-y-auto' : ''}`}>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-[250px] md:auto-rows-[300px]">
-            {participants.map((participant: any) => (
-              <div key={participant.uid}>
-                <ParticipantVideo participant={participant} />
-              </div>
-            ))}
-          </div>
+      {/* Landscape Mode */}
+      <div className="hidden landscape:flex h-full w-full items-center justify-center p-6">
+        <div className="flex gap-4 justify-center items-center">
+          {participants.map((participant: any) => (
+            <div
+              key={participant.uid}
+              style={dimensions}
+              className="relative flex-shrink-0"
+            >
+              <ParticipantVideo participant={participant} />
+            </div>
+          ))}
         </div>
       </div>
     </div>
