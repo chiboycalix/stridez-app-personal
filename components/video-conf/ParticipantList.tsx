@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { MoreVertical, Crown, UserRoundX, UserRoundPlus, Hand } from 'lucide-react';
 import {
   Popover,
@@ -8,12 +9,16 @@ import {
 import { useVideoConferencing } from '@/context/VideoConferencingContext';
 
 const ParticipantList = ({ allParticipants }: any) => {
+  const {currentUser} = useAuth();
   const {
     isMicrophoneEnabled,
     isCameraEnabled,
     speakingParticipants,
     raisedHands
   } = useVideoConferencing();
+
+  console.log('allParticipants', allParticipants);
+  console.log(currentUser)
 
 
   return (
@@ -45,7 +50,7 @@ const ParticipantList = ({ allParticipants }: any) => {
                     <MoreVertical className="w-4 h-4 text-gray-400" />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent
+                { <PopoverContent
                   className="w-44 p-0 bg-gray-800 border-gray-700 z-[200]"
                   align="end"
                   side="bottom"
@@ -80,7 +85,7 @@ const ParticipantList = ({ allParticipants }: any) => {
                       <span>Make Co-host</span>
                     </button>
                   </div>
-                </PopoverContent>
+                </PopoverContent>}
               </Popover>
             </div>
           </div>
