@@ -230,8 +230,8 @@ export function VideoConferencingProvider({
                 },
               ]);
               break;
-            
-            case "give-cohost": 
+
+            case "give-cohost":
               console.log('co host granted to user');
           }
         } catch (error) {
@@ -583,7 +583,7 @@ export function VideoConferencingProvider({
       rtcScreenShareClient.on("user-unpublished", handleUserUnpublishedScreen);
       rtcScreenShareClient.on(
         "connection-state-change",
-        (curState, prevState) => {}
+        (curState, prevState) => { }
       );
 
       const mode = rtcScreenShareOptions?.proxyMode ?? 0;
@@ -1217,7 +1217,10 @@ export function VideoConferencingProvider({
           return;
         }
 
-        rtmClient = AgoraRTM.createInstance(meetingConfig.appid);
+        rtmClient = AgoraRTM.createInstance(meetingConfig.appid, {
+          enableLogUpload: false,
+          logFilter: AgoraRTM.LOG_FILTER_OFF
+        });
         const sanitizedUid = String(meetingConfig.uid).replace(
           /[^a-zA-Z0-9]/g,
           ""
@@ -1402,7 +1405,7 @@ export function VideoConferencingProvider({
       rtcClient.on("user-published", onMediaStreamPublished);
       rtcClient.on("user-unpublished", onMediaStreamUnpublished);
       rtcClient.on("user-left", onParticipantLeft);
-      rtcClient.on("user-joined", (user) => {});
+      rtcClient.on("user-joined", (user) => { });
 
       await rtcClient.setClientRole("host");
       setupVolumeIndicator();
@@ -1693,8 +1696,9 @@ export function VideoConferencingProvider({
             Authorization: `Bearer ${Cookies.get("accessToken")}`,
           },
           body: JSON.stringify({
+            type: message,
             roomCode: channelName,
-            userId: uid,
+            uid
           }),
         }
       );
