@@ -91,6 +91,8 @@ interface VideoConferencingContextContextType {
   sendChatMessage: (content: string, type: "text" | "emoji") => Promise<void>;
   sendHostPermission: (message: string, uid: any) => Promise<void>;
   sendCoHostPermission: (message: string, uid: any) => Promise<void>;
+  remoteScreenShareParticipants: Record<string, any>;
+  currentScreenShareUser: string;
 }
 
 let rtcClient: IAgoraRTCClient;
@@ -118,7 +120,7 @@ export function VideoConferencingProvider({
     Record<string, any>
   >({});
   const [remoteScreenShareParticipants, setRemoteScreenShareParticipants] =
-    useState<Record<string, any> | null>({});
+    useState<Record<string, any>>({});
 
   const [username, setUsername] = useState("");
   const [channelName, setChannelName] = useState("");
@@ -143,6 +145,9 @@ export function VideoConferencingProvider({
   } | null>(null);
   const [raisedHands, setRaisedHands] = useState<Record<string, boolean>>({});
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [currentScreenShareUser, setCurrentScreenShareUser] = useState<string>(
+    ""
+  );
 
   useEffect(() => {
     AgoraRTC.setLogLevel(4);
@@ -193,8 +198,10 @@ export function VideoConferencingProvider({
               break;
 
             case "screen-share-state":
+              
               if (message.isSharing) {
                 setScreenShare(String(message.uid), false);
+                setCurrentScreenShareUser(String(uid));
               } else {
                 setScreenShare(null, false);
               }
@@ -256,7 +263,7 @@ export function VideoConferencingProvider({
   AgoraRTC.registerExtensions([extension]);
   const [meetingConfig, setMeetingConfig] = useState<Options>({
     channel: "",
-    appid: "d9b1d4e54b9e4a01aac1de9833d83752",
+    appid: "",
     rtcToken: "",
     rtmToken: "",
     proxyMode: "",
@@ -268,7 +275,7 @@ export function VideoConferencingProvider({
 
   const [rtcScreenShareOptions, setRtcScreenShareOptions] = useState<Options>({
     channel: "",
-    appid: "d9b1d4e54b9e4a01aac1de9833d83752",
+    appid: "",
     rtcToken: "",
     rtmToken: "",
     proxyMode: "",
@@ -512,7 +519,7 @@ export function VideoConferencingProvider({
           await rtmChannel.sendMessage({
             text: JSON.stringify({
               type: "screen-share-state",
-              uid: meetingConfig.uid,
+              uid: rtcScreenShareOptions.uid,
               isSharing: true,
             }),
           });
@@ -601,15 +608,15 @@ export function VideoConferencingProvider({
 
       try {
         if (rtcScreenShareOptions) {
-          const sanitizedUid = String(rtcScreenShareOptions.uid).replace(
-            /[^a-zA-Z0-9]/g,
-            ""
-          ) as any;
+          // const sanitizedUid = String(rtcScreenShareOptions.uid).replace(
+          //   /[^a-zA-Z0-9]/g,
+          //   ""
+          // ) as any;
           await rtcScreenShareClient.join(
             rtcScreenShareOptions.appid || "",
             rtcScreenShareOptions.channel || "",
             rtcScreenShareOptions.rtcToken || null,
-            sanitizedUid
+            rtcScreenShareOptions.uid || null
           );
         }
       } catch (error) {
@@ -1850,6 +1857,8 @@ export function VideoConferencingProvider({
         sendChatMessage,
         sendHostPermission,
         sendCoHostPermission,
+        remoteScreenShareParticipants,
+        currentScreenShareUser,
       }}
     >
       {children}

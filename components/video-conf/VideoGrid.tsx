@@ -3,6 +3,7 @@ import VideoMutedDisplay from './VideoMutedDisplay';
 import { Hand, Mic, MicOff } from 'lucide-react';
 import { useVideoConferencing } from "@/context/VideoConferencingContext";
 import { StreamPlayer } from './StreamPlayer';
+import { ScreenSharePlayer } from './ScreenSharePlayer';
 
 export function ParticipantVideo({ participant, customClasses = '' }: any) {
   const {
@@ -125,10 +126,10 @@ export function RegularGrid({ participants }: any) {
 }
 
 export function ScreenShareView({ remoteParticipants }: any) {
-  const { screenTrack, screenSharingUser } = useVideoConferencing();
+  const { screenTrack, screenSharingUser, remoteScreenShareParticipants, currentScreenShareUser } = useVideoConferencing();
 
   if (!screenSharingUser) return null;
-
+  
   if (screenSharingUser.isLocal) {
     return (
       <div className="w-full lg:basis-9/12 min-h-[300px] sm:min-h-[400px] bg-black">
@@ -137,25 +138,27 @@ export function ScreenShareView({ remoteParticipants }: any) {
             videoTrack={screenTrack?.screenVideoTrack}
             audioTrack={screenTrack?.screenAudioTrack}
             isScreenShare={true}
-          />
+            />
         </div>
       </div>
     );
   }
-
-  const sharingParticipant = remoteParticipants[screenSharingUser.uid];
+  
+  const sharingParticipant = remoteParticipants[currentScreenShareUser];
   if (!sharingParticipant) return null;
+
+  console.log('passed sharing', sharingParticipant?.videoTrack)
 
   return (
     <div className="w-full lg:basis-9/12 min-h-[300px] sm:min-h-[400px] bg-black">
       <div className="relative h-full w-full">
-        <StreamPlayer
-          videoTrack={sharingParticipant.screenVideoTrack}
-          audioTrack={sharingParticipant.screenAudioTrack}
-          isScreenShare={true}
+        <ScreenSharePlayer
+          videoTrack={sharingParticipant && sharingParticipant?.videoTrack}
+          audioTrack={remoteParticipants[currentScreenShareUser]?.screenAudioTrack}
+          uid={currentScreenShareUser}
         />
         <div className="absolute top-2 left-2 bg-black/50 px-2 py-1 rounded text-white text-sm">
-          {sharingParticipant.isLocal ? 'Your' : `${sharingParticipant.name}'s`} screen
+          {sharingParticipant?.isLocal ? 'Your' : `${sharingParticipant?.name}'s`} screen
         </div>
       </div>
     </div>
