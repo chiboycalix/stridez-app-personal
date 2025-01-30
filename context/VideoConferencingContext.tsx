@@ -1230,10 +1230,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       rtcClient.on("user-unpublished", onMediaStreamUnpublished);
       rtcClient.on("user-left", onParticipantLeft);
       rtcClient.on("user-joined", (user) => { });
-      rtcClient.on("stream-added", (event: any) => {
-        const stream = event.stream;
-
-      })
 
       await rtcClient.setClientRole("host");
       setupVolumeIndicator();
