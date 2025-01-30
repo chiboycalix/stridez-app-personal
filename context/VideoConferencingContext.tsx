@@ -114,7 +114,8 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   } | null>(null);
   const [raisedHands, setRaisedHands] = useState<Record<string, boolean>>({});
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-
+  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+  console.log({ isMobile })
   useEffect(() => {
     AgoraRTC.setLogLevel(4);
     AgoraRTC.disableLogUpload();
@@ -217,6 +218,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
   const extension = new VirtualBackgroundExtension();
   AgoraRTC.registerExtensions([extension]);
+
   const [meetingConfig, setMeetingConfig] = useState<Options>({
     channel: "",
     appid: "d9b1d4e54b9e4a01aac1de9833d83752",
@@ -1097,6 +1099,13 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       const uid = String(user.uid);
 
       if (mediaType === "video" && !user.videoTrack?.isScreenTrack) {
+        if (isMobile) {
+          await rtcClient.setRemoteVideoStreamType(user.uid, 1); // 1 = Low quality
+        }
+        const remoteVideoTrack = user.videoTrack;
+        // Play the remote video track
+        remoteVideoTrack.play('remote-video-container');
+
         await handleMediaTrackUpdate(uid, 'video', user.videoTrack, true);
       }
 
@@ -1221,6 +1230,10 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       rtcClient.on("user-unpublished", onMediaStreamUnpublished);
       rtcClient.on("user-left", onParticipantLeft);
       rtcClient.on("user-joined", (user) => { });
+      rtcClient.on("stream-added", (event: any) => {
+        const stream = event.stream;
+
+      })
 
       await rtcClient.setClientRole("host");
       setupVolumeIndicator();
