@@ -74,7 +74,7 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
     videoTrack && (!isLocalUser || (isLocalUser && isCameraEnabled));
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full" style={{ visibility: "visible", width: "100%", height: "100%" }}>
       {shouldShowVideo ? (
         <div
           ref={containerRef}

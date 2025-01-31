@@ -1099,12 +1099,12 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       const uid = String(user.uid);
 
       if (mediaType === "video" && !user.videoTrack?.isScreenTrack) {
-        if (isMobile) {
-          await rtcClient.setRemoteVideoStreamType(user.uid, 1); // 1 = Low quality
-        }
-        const remoteVideoTrack = user.videoTrack;
-        // Play the remote video track
-        remoteVideoTrack.play('remote-video-container');
+        // if (isMobile) {
+        //   await rtcClient.setRemoteVideoStreamType(user.uid, 1); // 1 = Low quality
+        // }
+        // const remoteVideoTrack = user.videoTrack;
+        // // Play the remote video track
+        // remoteVideoTrack.play('remote-video-container');
 
         await handleMediaTrackUpdate(uid, 'video', user.videoTrack, true);
       }

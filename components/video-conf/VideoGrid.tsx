@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import VideoMutedDisplay from './VideoMutedDisplay';
 import { Hand, Mic, MicOff } from 'lucide-react';
 import { useVideoConferencing } from "@/context/VideoConferencingContext";
@@ -102,7 +102,7 @@ export function RegularGrid({ participants }: any) {
       <div className="sm:hidden h-full overflow-y-auto">
         <div className="flex flex-col gap-2">
           {participants.map((participant: any) => (
-            <div key={participant.uid} className="w-full h-[250px] flex-shrink-0">
+            <div key={participant.uid} className="w-full h-[250px] flex-shrink-0 min-h-[250px]">
               <ParticipantVideo participant={participant} />
             </div>
           ))}
@@ -111,9 +111,9 @@ export function RegularGrid({ participants }: any) {
 
       <div className="hidden sm:block h-full">
         <div className={`h-full ${count > 6 ? 'overflow-y-auto' : ''}`}>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-[250px] md:auto-rows-[300px]">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-[250px] md:auto-rows-[300px] min-h-[300px]">
             {participants.map((participant: any) => (
-              <div key={participant.uid}>
+              <div key={participant.uid} className="min-h-[250px]">
                 <ParticipantVideo participant={participant} />
               </div>
             ))}
@@ -189,7 +189,7 @@ export function VideoGrid({
     isSharingScreen,
     meetingConfig
   } = useVideoConferencing();
-
+  const [orientation, setOrientation] = useState(window.innerWidth > window.innerHeight ? "landscape" : "portrait");
   const { participants } = useMemo(() => {
 
     const validRemoteParticipants = Object.entries(remoteParticipants || {})
@@ -226,6 +226,15 @@ export function VideoGrid({
     };
   }, [localUser, remoteParticipants, userIsHost, meetingRoomData, meetingConfig?.uid]);
 
+  useEffect(() => {
+    const handleResize = () => {
+      setOrientation(window.innerWidth > window.innerHeight ? "landscape" : "portrait");
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+
   if (isSharingScreen) {
     return (
       <div className="h-full w-full flex flex-col lg:flex-row gap-2">
@@ -237,7 +246,7 @@ export function VideoGrid({
 
   return (
     <div className="h-full w-full">
-      <RegularGrid participants={participants} />
+      <RegularGrid key={orientation} participants={[localUser, ...Object.values(remoteParticipants)]} />
     </div>
   );
 }
