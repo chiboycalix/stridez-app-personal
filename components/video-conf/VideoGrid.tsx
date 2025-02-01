@@ -3,6 +3,7 @@ import VideoMutedDisplay from "./VideoMutedDisplay";
 import { Hand, Mic, MicOff } from "lucide-react";
 import { useVideoConferencing } from "@/context/VideoConferencingContext";
 import { StreamPlayer } from "./StreamPlayer";
+import { ScreenPlayer } from "./ScreenPlayer";
 
 export function ParticipantVideo({ participant, customClasses = "" }: any) {
   const {
@@ -151,7 +152,7 @@ export function ScreenShareView({ remoteParticipants }: any) {
     );
   }
 
-  const sharingParticipant = remoteParticipants["1000000006"];
+  const sharingParticipant = remoteParticipants["1"];
   console.log("remoteParticipants share", remoteParticipants);
   console.log("screenSharingUser share", screenSharingUser);
   console.log("screenSharingUser share", screenSharingUser);
@@ -159,10 +160,10 @@ export function ScreenShareView({ remoteParticipants }: any) {
   console.log("currentScreenShareUid share", currentScreenShareUid);
   if (!sharingParticipant) return null;
   return (
-    <div className="w-full lg:basis-9/12 min-h-[300px] sm:min-h-[400px] bg-black">
+    <div className="w-full lg:basis-9/12 min-h-[300px] sm:min-h-[400px] ">
       <div className="relative h-full w-full">
-        <StreamPlayer
-          videoTrack={sharingParticipant.videoTrack}
+        <ScreenPlayer
+          videoTrack={sharingParticipant?.videoTrack}
           audioTrack={sharingParticipant.screenAudioTrack}
           isScreenShare={true}
         />

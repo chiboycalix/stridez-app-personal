@@ -20,6 +20,7 @@ import { agoraGetAppData } from "@/lib";
 import { IRemoteAudioTrack, IRemoteVideoTrack } from "agora-rtc-sdk-ng";
 import { rateLimiter } from "@/utils/MessageRateLimiter";
 import VirtualBackgroundExtension from "agora-extension-virtual-background";
+import { useAuth } from "./AuthContext";
 
 interface RemoteParticipant {
   name: string;
@@ -108,6 +109,7 @@ export function VideoConferencingProvider({
 }: {
   children: ReactNode;
 }) {
+  const { currentUser } = useAuth()
   const [currentStep, setCurrentStep] = useState(1);
   const [meetingRoomId, setMeetingRoomId] = useState("");
   const [isMicrophoneEnabled, setIsMicrophoneEnabled] = useState(true);
@@ -202,7 +204,6 @@ export function VideoConferencingProvider({
                 setScreenShare(String(message.uid), false);
               } else {
                 setScreenShare(null, false);
-                // setCurrentScreenShareUid(String(message.screenUid));
               }
               break;
 
@@ -451,6 +452,7 @@ export function VideoConferencingProvider({
 
       fetchAgoraData();
       fetchMeetingRoomData();
+      setUsername(currentUser.username)
     }
   }, [channelName, username, fetchMeetingRoomData]);
 
@@ -504,13 +506,18 @@ export function VideoConferencingProvider({
           uid: String(rtcScreenShareOptions.uid),
           isLocal: true,
         });
-        setRemoteScreenShareParticipants((prevUsers) => ({
+
+        const rssu = (prevUsers: { [key: string]: any }) => ({
           ...prevUsers,
           [rtcScreenShareOptions.uid]: {
-            ...prevUsers![rtcScreenShareOptions.uid],
+            ...prevUsers[rtcScreenShareOptions.uid],
+            screenVideoTrack,
             videoTrack: screenVideoTrack,
           },
-        }));
+        });
+
+        console.log("rssu share...", rssu);
+        setRemoteScreenShareParticipants(rssu);
 
         if (screenVideoTrack) {
           await rtcScreenShareClient.publish([screenVideoTrack]);
@@ -598,7 +605,7 @@ export function VideoConferencingProvider({
       rtcScreenShareClient.on("user-unpublished", handleUserUnpublishedScreen);
       rtcScreenShareClient.on(
         "connection-state-change",
-        (curState, prevState) => {}
+        (curState, prevState) => { }
       );
 
       const mode = rtcScreenShareOptions?.proxyMode ?? 0;
@@ -620,12 +627,14 @@ export function VideoConferencingProvider({
           //   /[^a-zA-Z0-9]/g,
           //   ""
           // ) as any;
-          await rtcScreenShareClient.join(
+          const newUid = await rtcScreenShareClient.join(
             rtcScreenShareOptions.appid || "",
             rtcScreenShareOptions.channel || "",
             rtcScreenShareOptions.rtcToken || null,
             String(rtcScreenShareOptions.uid) || ""
           );
+
+          console.log("assigned uid share..", newUid)
         }
       } catch (error) {
         console.error("Error joining screen share client:", error);
@@ -1236,19 +1245,40 @@ export function VideoConferencingProvider({
         await rtcClient.subscribe(user, mediaType);
         const uid = String(user.uid);
 
-        if (mediaType === "video" && !user.videoTrack?.isScreenTrack) {
-          if (isMobile) {
-            await rtcClient.setRemoteVideoStreamType(user.uid, 1); // 1 = Low quality
-          }
-          const remoteVideoTrack = user.videoTrack;
-          // Play the remote video track
-          remoteVideoTrack.play("remote-video-container");
+        if (mediaType === "video") {
+          const videoTrack = user.videoTrack;
+          setRemoteParticipants((prevUsers) => {
+            const existingUser = prevUsers[uid] || {
+              name: "",
+              rtcUid: uid,
+              audioEnabled: false,
+              videoEnabled: true,
+            };
 
-          await handleMediaTrackUpdate(uid, "video", user.videoTrack, true);
+
+            return {
+              ...prevUsers,
+              [uid]: {
+                ...existingUser,
+                videoTrack,
+                videoEnabled: true,
+                hasTrack: true,
+              },
+            };
+          });
         }
 
         if (mediaType === "audio") {
-          await handleMediaTrackUpdate(uid, "audio", user.audioTrack, true);
+          const audioTrack = user.audioTrack;
+          setRemoteParticipants((prevUsers) => ({
+            ...prevUsers,
+            [uid]: {
+              ...prevUsers[uid],
+              audioTrack,
+              audioEnabled: true,
+            },
+          }));
+          audioTrack.play();
         }
       } catch (error) {
         console.error("[STREAM-ERROR] Error in onMediaStreamPublished:", error);
@@ -1336,11 +1366,6 @@ export function VideoConferencingProvider({
         rtcClient.removeAllListeners();
       }
     };
-
-    rtcClient.on("user-published", onMediaStreamPublished);
-    rtcClient.on("user-unpublished", onMediaStreamUnpublished);
-    rtcClient.on("user-left", onParticipantLeft);
-
     return cleanup;
   }, [
     hasJoinedMeeting,
@@ -1353,19 +1378,7 @@ export function VideoConferencingProvider({
     remoteUsersRef.current = remoteParticipants;
   }, [remoteParticipants]);
 
-  const subscribeToExistingParticipants = async () => {
-    if (!rtcClient) return;
-    const remoteUsers = rtcClient.remoteUsers;
 
-    for (const user of remoteUsers) {
-      if (user.hasVideo) {
-        await subscribeToParticipantMedia(user, "video");
-      }
-      if (user.hasAudio) {
-        await subscribeToParticipantMedia(user, "audio");
-      }
-    }
-  };
 
   const connectToMeetingRoom = async () => {
     try {
@@ -1377,7 +1390,7 @@ export function VideoConferencingProvider({
       rtcClient.on("user-published", onMediaStreamPublished);
       rtcClient.on("user-unpublished", onMediaStreamUnpublished);
       rtcClient.on("user-left", onParticipantLeft);
-      rtcClient.on("user-joined", (user) => {});
+      rtcClient.on("user-joined", (user) => { });
 
       await rtcClient.setClientRole("host");
       setupVolumeIndicator();
@@ -1424,7 +1437,6 @@ export function VideoConferencingProvider({
     try {
       if (!meetingConfig) return;
       await connectToMeetingRoom();
-      await subscribeToExistingParticipants();
 
       if (rtmChannel) {
         await rtmChannel.sendMessage({
@@ -1464,72 +1476,6 @@ export function VideoConferencingProvider({
       setMeetingConfig(meetingConfig);
     } catch (error) {
       console.log("Error joining meeting:", error);
-    }
-  };
-
-  const subscribeToParticipantMedia = async (
-    user: any,
-    mediaType: "audio" | "video"
-  ) => {
-    try {
-      await rtcClient.subscribe(user, mediaType);
-      const uid = String(user.uid);
-      console.log("uid of screen sharer....", uid);
-
-      if (mediaType === "video") {
-        const videoTrack = user.videoTrack;
-
-        setRemoteParticipants((prevUsers) => {
-          const existingUser = prevUsers[uid] || {
-            name: "",
-            rtcUid: uid,
-            audioEnabled: false,
-            videoEnabled: true,
-          };
-          
-
-          return {
-            ...prevUsers,
-            [uid]: {
-              ...existingUser,
-              videoTrack,
-              videoEnabled: true,
-              hasTrack: true,
-            },
-          };
-        });
-
-        if (rtmChannel) {
-          await rtmChannel.sendMessage({
-            text: JSON.stringify({
-              type: "request-video-state",
-              uid: meetingConfig.uid,
-              targetUid: uid,
-            }),
-          });
-          await rtmChannel.sendMessage({
-            text: JSON.stringify({
-              type: "request-states",
-              uid: meetingConfig.uid,
-            }),
-          });
-        }
-      }
-
-      if (mediaType === "audio") {
-        const audioTrack = user.audioTrack;
-        setRemoteParticipants((prevUsers) => ({
-          ...prevUsers,
-          [uid]: {
-            ...prevUsers[uid],
-            audioTrack,
-            audioEnabled: true,
-          },
-        }));
-        audioTrack.play();
-      }
-    } catch (error) {
-      console.log(`Error subscribing to ${mediaType}:`, error);
     }
   };
 
