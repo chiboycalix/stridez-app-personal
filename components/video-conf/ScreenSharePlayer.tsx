@@ -45,16 +45,16 @@ export const ScreenSharePlayer: React.FC<StreamPlayerProps> = ({
   // Initialize or update video track
   useEffect(() => {
     const initVideo = async () => {
-      if (!videoTrack || !containerRef.current) return;
+      if (!videoTrack || !containerRef?.current) return;
 
       try {
         // Clear existing content
-        while (containerRef.current.firstChild) {
-          containerRef.current.removeChild(containerRef.current.firstChild);
+        while (containerRef?.current?.firstChild) {
+          containerRef?.current.removeChild(containerRef.current.firstChild);
         }
 
         // Play new track
-        videoTrack.play(containerRef.current, {
+        videoTrack?.play(containerRef.current, {
           fit: videoTrack ? "contain" : "cover",
           ...options,
         });
@@ -67,7 +67,7 @@ export const ScreenSharePlayer: React.FC<StreamPlayerProps> = ({
   }, [videoTrack, options, uid]);
 
   return (
-    videoTrack && (
+    containerRef && videoTrack && (
       <div className="relative w-full h-full">
         <video
           ref={containerRef}

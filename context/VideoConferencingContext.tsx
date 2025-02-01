@@ -93,6 +93,8 @@ interface VideoConferencingContextContextType {
   sendCoHostPermission: (message: string, uid: any) => Promise<void>;
   remoteScreenShareParticipants: Record<string, any>;
   currentScreenShareUser: string;
+  sendMuteRemoteUserPermission: (message: string, uid: any) => Promise<void>;
+  handleMeetingHostAndCohost: () => void;
 }
 
 let rtcClient: IAgoraRTCClient;
@@ -145,9 +147,8 @@ export function VideoConferencingProvider({
   } | null>(null);
   const [raisedHands, setRaisedHands] = useState<Record<string, boolean>>({});
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [currentScreenShareUser, setCurrentScreenShareUser] = useState<string>(
-    ""
-  );
+  const [currentScreenShareUser, setCurrentScreenShareUser] =
+    useState<string>("");
 
   useEffect(() => {
     AgoraRTC.setLogLevel(4);
@@ -198,7 +199,6 @@ export function VideoConferencingProvider({
               break;
 
             case "screen-share-state":
-              
               if (message.isSharing) {
                 setScreenShare(String(message.uid), false);
                 setCurrentScreenShareUser(String(uid));
@@ -239,7 +239,7 @@ export function VideoConferencingProvider({
               break;
 
             case "give-cohost":
-              console.log('co host granted to user');
+              console.log("co host granted to user");
           }
         } catch (error) {
           console.error("Error processing RTM message:", error);
@@ -361,7 +361,7 @@ export function VideoConferencingProvider({
         }, 200);
       }
     });
-  }, [rtcClient, meetingConfig.uid]);
+  }, [ meetingConfig.uid] );
 
   useRTMMessageHandler(
     rtmChannel,
@@ -396,20 +396,48 @@ export function VideoConferencingProvider({
     remoteScreenShareParticipantsRef.current = remoteScreenShareParticipants;
   }, [remoteScreenShareParticipants]);
 
+  // const handleMeetingHostAndCohost = useCallback(() => {
+  //   if (meetingRoomData) {
+  //     console.log('meetingRoom data shar', meetingRoomData);
+  //     const isHost = meetingRoomData?.room?.roomSubscribers?.some(
+  //       (user: { isOwner: boolean }) => user.isOwner
+  //     );
+
+  //     const isCoHost = meetingRoomData?.room?.roomSubscribers?.some(
+  //       (user: { isCoHost: boolean }) => user.isCoHost
+  //     );
+
+  //     setUserIsHost(isHost);
+  //     setUserIsCoHost(isCoHost);
+  //   }
+  // }, [meetingRoomData]);
+
   const handleMeetingHostAndCohost = useCallback(() => {
     if (meetingRoomData) {
+      console.log("meeting room data", meetingRoomData);
+
       const isHost = meetingRoomData?.room?.roomSubscribers?.some(
-        (user: { isOwner: boolean }) => user.isOwner
+        (user: { isOwner: boolean; userId: string | number }) => {
+          return (
+            parseInt(`${user.userId}`) === parseInt(`${meetingConfig.uid}`) &&
+            user.isOwner
+          );
+        }
       );
 
       const isCoHost = meetingRoomData?.room?.roomSubscribers?.some(
-        (user: { isCoHost: boolean }) => user.isCoHost
+        (user: { isCoHost: boolean; userId: string | number }) => {
+          return (
+            parseInt(`${user.userId}`) === parseInt(`${meetingConfig.uid}`) &&
+            user.isCoHost
+          );
+        }
       );
 
       setUserIsHost(isHost);
       setUserIsCoHost(isCoHost);
     }
-  }, [meetingRoomData]);
+  }, [meetingRoomData, meetingConfig]);
 
   const fetchMeetingRoomData = useCallback(async () => {
     try {
@@ -457,9 +485,9 @@ export function VideoConferencingProvider({
     }
   }, [channelName, username, fetchMeetingRoomData]);
 
-  useEffect(() => {
-    handleMeetingHostAndCohost();
-  }, [handleMeetingHostAndCohost, meetingRoomData]);
+  // useEffect(() => {
+  //   handleMeetingHostAndCohost();
+  // }, [handleMeetingHostAndCohost, meetingRoomData]);
 
   const handleScreenShareUserLeft = async (user: any) => {
     const uid = String(user.uid);
@@ -590,7 +618,7 @@ export function VideoConferencingProvider({
       rtcScreenShareClient.on("user-unpublished", handleUserUnpublishedScreen);
       rtcScreenShareClient.on(
         "connection-state-change",
-        (curState, prevState) => { }
+        (curState, prevState) => {}
       );
 
       const mode = rtcScreenShareOptions?.proxyMode ?? 0;
@@ -1226,7 +1254,7 @@ export function VideoConferencingProvider({
 
         rtmClient = AgoraRTM.createInstance(meetingConfig.appid, {
           enableLogUpload: false,
-          logFilter: AgoraRTM.LOG_FILTER_OFF
+          logFilter: AgoraRTM.LOG_FILTER_OFF,
         });
         const sanitizedUid = String(meetingConfig.uid).replace(
           /[^a-zA-Z0-9]/g,
@@ -1269,7 +1297,16 @@ export function VideoConferencingProvider({
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [meetingConfig.appid, meetingConfig.rtmToken, meetingConfig.channel, meetingConfig.uid, onParticipantJoined, onMemberDisconnected, disconnectFromMessaging, fetchActiveMeetingParticipants]
+    [
+      meetingConfig.appid,
+      meetingConfig.rtmToken,
+      meetingConfig.channel,
+      meetingConfig.uid,
+      onParticipantJoined,
+      onMemberDisconnected,
+      disconnectFromMessaging,
+      fetchActiveMeetingParticipants,
+    ]
   );
 
   const onMediaStreamPublished = useCallback(
@@ -1412,7 +1449,7 @@ export function VideoConferencingProvider({
       rtcClient.on("user-published", onMediaStreamPublished);
       rtcClient.on("user-unpublished", onMediaStreamUnpublished);
       rtcClient.on("user-left", onParticipantLeft);
-      rtcClient.on("user-joined", (user) => { });
+      rtcClient.on("user-joined", (user) => {});
 
       await rtcClient.setClientRole("host");
       setupVolumeIndicator();
@@ -1497,6 +1534,7 @@ export function VideoConferencingProvider({
       setHasJoinedMeeting(true);
       setMeetingStage("hasJoinedMeeting");
       setMeetingConfig(meetingConfig);
+      handleMeetingHostAndCohost();
     } catch (error) {
       console.log("Error joining meeting:", error);
     }
@@ -1663,10 +1701,6 @@ export function VideoConferencingProvider({
     }
   };
 
-
-
-
-
   const toggleRaiseHand = useCallback(async () => {
     if (!rtmChannel || !meetingConfig.uid) return;
 
@@ -1705,7 +1739,7 @@ export function VideoConferencingProvider({
           body: JSON.stringify({
             type: message,
             roomCode: channelName,
-            uid
+            uid,
           }),
         }
       );
@@ -1756,6 +1790,15 @@ export function VideoConferencingProvider({
     } catch (error) {
       console.error("Error sending cohost permission:", error);
     }
+  };
+
+  const sendMuteRemoteUserPermission = async (action: string, uid: number) => {
+    await rtmChannel.sendMessage({
+      text: JSON.stringify({
+        type: action,
+        uid: uid,
+      }),
+    });
   };
 
   useEffect(() => {
@@ -1859,6 +1902,8 @@ export function VideoConferencingProvider({
         sendCoHostPermission,
         remoteScreenShareParticipants,
         currentScreenShareUser,
+        sendMuteRemoteUserPermission,
+        handleMeetingHostAndCohost,
       }}
     >
       {children}
