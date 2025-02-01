@@ -794,17 +794,17 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       try {
         const newState = !isMicrophoneEnabled;
         await localUserTrack.audioTrack.setEnabled(newState);
-        if (hasJoinedMeeting && rtcClient) {
-          if (newState) {
-            const isPublished = rtcClient.localTracks.includes(localUserTrack.audioTrack);
-            if (!isPublished) {
-              await rtcClient.publish([localUserTrack.audioTrack]);
-            }
-          } else {
-            await rtcClient.unpublish([localUserTrack.audioTrack]);
-          }
-        }
-        ensureRemoteAudioPlaying();
+        // if (hasJoinedMeeting && rtcClient) {
+        //   if (newState) {
+        //     const isPublished = rtcClient.localTracks.includes(localUserTrack.audioTrack);
+        //     if (!isPublished) {
+        //       await rtcClient.publish([localUserTrack.audioTrack]);
+        //     }
+        //   } else {
+        //     await rtcClient.unpublish([localUserTrack.audioTrack]);
+        //   }
+        // }
+        // ensureRemoteAudioPlaying();
 
         if (rtmChannel) {
           await sendRateLimitedMessage({
@@ -828,16 +828,16 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       if (localUserTrack?.videoTrack) {
         const newState = !isCameraEnabled;
         await localUserTrack.videoTrack.setEnabled(newState);
-        if (hasJoinedMeeting && rtcClient) {
-          if (newState) {
-            const isPublished = rtcClient.localTracks.includes(localUserTrack.videoTrack);
-            if (!isPublished) {
-              await rtcClient.publish([localUserTrack.videoTrack]);
-            }
-          } else {
-            await rtcClient.unpublish([localUserTrack.videoTrack]);
-          }
-        }
+        // if (hasJoinedMeeting && rtcClient) {
+        //   if (newState) {
+        //     const isPublished = rtcClient.localTracks.includes(localUserTrack.videoTrack);
+        //     if (!isPublished) {
+        //       await rtcClient.publish([localUserTrack.videoTrack]);
+        //     }
+        //   } else {
+        //     await rtcClient.unpublish([localUserTrack.videoTrack]);
+        //   }
+        // }
 
         if (rtmChannel) {
           await sendRateLimitedMessage({
