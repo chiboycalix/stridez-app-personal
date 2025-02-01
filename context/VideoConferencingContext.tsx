@@ -789,7 +789,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     }
   }, [localUserTrack?.audioTrack, localUserTrack?.screenTrack, localUserTrack?.videoTrack]);
 
-  const toggleMicrophone = async () => {
+  const toggleMicrophone = useCallback(async () => {
     if (localUserTrack && localUserTrack.audioTrack) {
       try {
         const newState = !isMicrophoneEnabled;
@@ -821,9 +821,9 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         console.error("Error toggling audio:", error);
       }
     }
-  };
+  }, [isMicrophoneEnabled, localUserTrack, meetingConfig?.uid]);
 
-  const toggleCamera = async () => {
+  const toggleCamera = useCallback(async () => {
     try {
       if (localUserTrack?.videoTrack) {
         const newState = !isCameraEnabled;
@@ -856,7 +856,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     } catch (error) {
       console.log("Error toggling video:", error);
     }
-  };
+  }, [isCameraEnabled, localUserTrack?.videoTrack, meetingConfig?.uid]);
 
   useEffect(() => {
     if (hasJoinedMeeting) {
