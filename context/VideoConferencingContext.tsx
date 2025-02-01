@@ -779,22 +779,22 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         const newState = !isMicrophoneEnabled;
         await localUserTrack.audioTrack.setEnabled(newState);
 
-        if (rtmChannel) {
-          await sendRateLimitedMessage({
-            text: JSON.stringify({
-              type: 'audio-state',
-              uid: meetingConfig.uid,
-              enabled: newState
-            })
-          });
-        }
+        // if (rtmChannel) {
+        //   await sendRateLimitedMessage({
+        //     text: JSON.stringify({
+        //       type: 'audio-state',
+        //       uid: meetingConfig.uid,
+        //       enabled: newState
+        //     })
+        //   });
+        // }
 
         setIsMicrophoneEnabled(newState);
       } catch (error) {
         console.error("Error toggling audio:", error);
       }
     }
-  }, [isMicrophoneEnabled, localUserTrack, meetingConfig?.uid]);
+  }, [isMicrophoneEnabled, localUserTrack]);
 
   const toggleCamera = useCallback(async () => {
     try {
@@ -812,24 +812,24 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         //   }
         // }
 
-        if (rtmChannel) {
-          await sendRateLimitedMessage({
-            text: JSON.stringify({
-              type: 'video-state',
-              uid: meetingConfig.uid,
-              enabled: newState,
-              hasTrack: true,
-              timestamp: Date.now()
-            })
-          });
-        }
+        // if (rtmChannel) {
+        //   await sendRateLimitedMessage({
+        //     text: JSON.stringify({
+        //       type: 'video-state',
+        //       uid: meetingConfig.uid,
+        //       enabled: newState,
+        //       hasTrack: true,
+        //       timestamp: Date.now()
+        //     })
+        //   });
+        // }
 
         setIsCameraEnabled(newState);
       }
     } catch (error) {
       console.log("Error toggling video:", error);
     }
-  }, [isCameraEnabled, localUserTrack?.videoTrack, meetingConfig?.uid]);
+  }, [isCameraEnabled, localUserTrack?.videoTrack]);
 
   useEffect(() => {
     rateLimiter.startResetTimer();
