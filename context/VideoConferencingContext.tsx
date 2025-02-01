@@ -1266,18 +1266,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       );
 
       await initializeRealtimeMessaging(username!);
-
-      const remoteUsers = rtcClient.remoteUsers;
-
-      for (const user of remoteUsers) {
-        if (user.hasVideo) {
-          await rtcClient.subscribe(user, "video");
-        }
-        if (user.hasAudio) {
-          await rtcClient.subscribe(user, "audio");
-        }
-      }
-
     } catch (error) {
       console.error("Error in connectToMeetingRoom:", error);
       throw error;
