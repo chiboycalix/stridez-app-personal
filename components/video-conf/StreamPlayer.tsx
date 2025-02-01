@@ -78,7 +78,7 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
       videoTrack.play(videoRef.current);
     }
   }, [videoTrack]);
-
+  console.log({ isCameraEnabled })
   return (
     <div className="relative w-full h-full" style={{ visibility: "visible", width: "100%", height: "100%" }}>
       {shouldShowVideo ? (

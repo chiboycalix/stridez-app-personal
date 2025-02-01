@@ -92,8 +92,7 @@ export default function VideoInterface({
             <div className="w-full mt-4 sm:mt-6">
               <div className="flex items-center justify-between relative">
                 {/* Audio/Video Controls */}
-                <div className="flex space-x-2 sm:space-x-3">
-                  {/* Microphone Control */}
+                {/* <div className="flex space-x-2 sm:space-x-3">
                   <div className="flex items-center h-10 bg-gray-100 rounded px-2 sm:px-3">
                     <div onClick={toggleMicrophone} className="cursor-pointer p-1">
                       {isMicrophoneEnabled ? <Mic size={18} /> : <MicOff size={18} />}
@@ -115,24 +114,23 @@ export default function VideoInterface({
                     </div>
                   </div>
 
-                  {/* Camera Control */}
                   <div className="flex items-center h-10 bg-gray-100 rounded px-2 sm:px-3">
                     <div onClick={toggleCamera} className="cursor-pointer p-1">
                       {isCameraEnabled ? <Video size={18} /> : <VideoOff size={18} />}
                     </div>
                     <MoreVertical size={18} className="cursor-pointer ml-1" />
                   </div>
-                </div>
+                </div> */}
 
                 {/* Settings Button */}
-                <div>
+                {/* <div>
                   <button
                     className="w-10 h-10 bg-white border flex items-center justify-center rounded cursor-pointer"
                     onClick={() => setShowSettingsModal(!showSettingsModal)}
                   >
                     <Settings size={18} />
                   </button>
-                </div>
+                </div> */}
               </div>
 
               {/* Username Input and Go Live Button */}

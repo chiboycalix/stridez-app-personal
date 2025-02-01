@@ -778,7 +778,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       try {
         const newState = !isMicrophoneEnabled;
         await localUserTrack.audioTrack.setEnabled(newState);
-      
+
         if (rtmChannel) {
           await sendRateLimitedMessage({
             text: JSON.stringify({
