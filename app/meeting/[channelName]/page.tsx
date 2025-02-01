@@ -13,12 +13,9 @@ export default function WaitingRoom() {
   const [hasPermissions, setHasPermissions] = useState(false);
   const params = useParams();
   // const searchParams = useSearchParams();
-  const {getCurrentUser} = useAuth();
+  const { getCurrentUser } = useAuth();
   // const username = searchParams.get("username");
   const username = getCurrentUser()?.username;
-
-  console.log('username:',getCurrentUser());
-
 
   const handleAllowPermissions = async () => {
     try {

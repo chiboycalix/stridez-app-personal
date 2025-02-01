@@ -24,7 +24,7 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
   options = {},
   isScreenShare = false
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const { isCameraEnabled, meetingConfig } = useVideoConferencing();
   const isLocalUser = uid === meetingConfig?.uid;
 
@@ -44,19 +44,19 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
   // Initialize or update video track
   useEffect(() => {
     const initVideo = async () => {
-      if (!videoTrack || !containerRef.current) return;
+      if (!videoTrack || !videoRef.current) return;
 
       const shouldPlay = isScreenShare || !isLocalUser || (isLocalUser && isCameraEnabled);
       if (!shouldPlay) return;
 
       try {
         // Clear existing content
-        while (containerRef.current.firstChild) {
-          containerRef.current.removeChild(containerRef.current.firstChild);
+        while (videoRef.current.firstChild) {
+          videoRef.current.removeChild(videoRef.current.firstChild);
         }
 
         // Play new track
-        await videoTrack.play(containerRef.current, {
+        await videoTrack.play(videoRef.current, {
           fit: isScreenShare ? 'contain' : 'cover',
           ...options
         });
@@ -73,11 +73,18 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
     !!videoTrack :
     videoTrack && (!isLocalUser || (isLocalUser && isCameraEnabled));
 
+  useEffect(() => {
+    if (videoTrack && videoRef.current) {
+      videoTrack.play(videoRef.current);
+    }
+  }, [videoTrack]);
+
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full" style={{ visibility: "visible", width: "100%", height: "100%" }}>
       {shouldShowVideo ? (
-        <div
-          ref={containerRef}
+        <video
+          playsInline autoPlay muted
+          ref={videoRef}
           className={`w-full h-full ${isScreenShare ? 'bg-black' : ''}`}
         />
       ) : (
