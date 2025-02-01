@@ -52,7 +52,8 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
 
   return (
     <div className="relative w-full h-full">
-      <video
+
+      {/* <video
         ref={videoRef}
         playsInline
         autoPlay
@@ -62,6 +63,16 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
       />
       {!shouldShowVideo && (
         <VideoMutedDisplay participant={{ uid, name: "", isLocal: isLocalUser }} />
+      )} */}
+      {shouldShowVideo ? (
+        <video
+          playsInline autoPlay muted
+          ref={videoRef}
+          className={`w-full h-full transition-opacity duration-300 ${isScreenShare ? 'bg-black' : ''} ${shouldShowVideo ? "opacity-100" : "opacity-0"
+            }`}
+        />
+      ) : (
+        <VideoMutedDisplay participant={{ uid, name: '', isLocal: isLocalUser }} />
       )}
     </div>
   );
