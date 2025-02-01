@@ -778,17 +778,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       try {
         const newState = !isMicrophoneEnabled;
         await localUserTrack.audioTrack.setEnabled(newState);
-        // if (hasJoinedMeeting && rtcClient) {
-        //   if (newState) {
-        //     const isPublished = rtcClient.localTracks.includes(localUserTrack.audioTrack);
-        //     if (!isPublished) {
-        //       await rtcClient.publish([localUserTrack.audioTrack]);
-        //     }
-        //   } else {
-        //     await rtcClient.unpublish([localUserTrack.audioTrack]);
-        //   }
-        // }
-        // ensureRemoteAudioPlaying();
+      
         if (rtmChannel) {
           await sendRateLimitedMessage({
             text: JSON.stringify({
@@ -840,14 +830,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       console.log("Error toggling video:", error);
     }
   }, [isCameraEnabled, localUserTrack?.videoTrack, meetingConfig?.uid]);
-
-  useEffect(() => {
-    if (hasJoinedMeeting) {
-      const audioCheckInterval = setInterval(ensureRemoteAudioPlaying, 5000);
-
-      return () => clearInterval(audioCheckInterval);
-    }
-  }, [hasJoinedMeeting]);
 
   useEffect(() => {
     rateLimiter.startResetTimer();
@@ -1126,17 +1108,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     [handleMediaTrackUpdate]
   );
 
-  const ensureRemoteAudioPlaying = () => {
-    rtcClient?.remoteUsers.forEach(user => {
-      if (user.audioTrack) {
-        user.audioTrack.setVolume(100);
-        if (!user.audioTrack.isPlaying) {
-          user.audioTrack.play()
-        }
-      }
-    });
-  };
-
   const onMediaStreamUnpublished = useCallback(async (user: any, mediaType: "audio" | "video") => {
     const uid = String(user.uid);
 
@@ -1289,8 +1260,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
         await broadcastCurrentMediaStates();
       }
-
-      ensureRemoteAudioPlaying();
 
       AgoraRTC.setLogLevel(1);
       setHasJoinedMeeting(true);
