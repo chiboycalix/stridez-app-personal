@@ -137,89 +137,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     screenAudioTrack: ILocalAudioTrack | null;
   } | null>(null);
 
-  const useRTMMessageHandler = (
-    rtmChannel: RtmChannel | null,
-    meetingConfig: Options,
-    username: string,
-    updateRemoteParticipant: (uid: string, updates: any) => void,
-    setScreenShare: (uid: string | null, isLocal: boolean) => void,
-  ) => {
-
-    const handleRTMMessage = useCallback(async ({ text, peerId }: any) => {
-      if (!text) return;
-
-      try {
-        const message = JSON.parse(text);
-        const uid = String(message.uid).replace(/[^a-zA-Z0-9]/g, '');
-
-        switch (message.type) {
-          case 'video-state':
-            updateRemoteParticipant(uid, {
-              videoEnabled: message.enabled
-            });
-            break;
-
-          case 'audio-state':
-            updateRemoteParticipant(uid, {
-              audioEnabled: message.enabled
-            });
-            break;
-
-          case 'screen-share-state':
-            if (message.isSharing) {
-              setScreenShare(String(message.uid), false);
-            } else {
-              setScreenShare(null, false);
-            }
-            break;
-
-          case 'user-info':
-            if (uid === String(meetingConfig.uid)) return;
-
-            updateRemoteParticipant(uid, {
-              name: message.name,
-              rtcUid: uid
-            });
-            break;
-          case 'hand-state':
-            setRaisedHands((prev: any) => ({
-              ...prev,
-              [uid]: message.isRaised
-            }));
-            break;
-          case 'chat':
-            setChatMessages(prev => [...prev, {
-              id: `${message.timestamp}-${uid}`,
-              sender: {
-                uid: uid,
-                name: message.senderName
-              },
-              content: message.content,
-              timestamp: message.timestamp,
-              type: message.messageType,
-              isLocal: String(uid) === String(meetingConfig.uid)
-            }]);
-            break;
-        }
-      } catch (error) {
-        console.error("Error processing RTM message:", error);
-      }
-      //removed setspeakingparticipants from the dependecy array
-    }, [meetingConfig.uid, updateRemoteParticipant, setScreenShare]);
-
-    useEffect(() => {
-      if (!rtmChannel) return;
-
-      rtmChannel.on("ChannelMessage", handleRTMMessage);
-      return () => {
-        rtmChannel.off("ChannelMessage", handleRTMMessage);
-      };
-    }, [rtmChannel, handleRTMMessage]);
-  };
-
-  const extension = new VirtualBackgroundExtension();
-  AgoraRTC.registerExtensions([extension]);
-
   const [meetingConfig, setMeetingConfig] = useState<Options>({
     channel: "",
     appid: "d9b1d4e54b9e4a01aac1de9833d83752",
@@ -278,6 +195,82 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     });
   }, []);
 
+  const handleRTMMessage = useCallback(async ({ text, peerId }: any) => {
+    console.log({ text })
+    if (!text) return;
+
+    try {
+      const message = JSON.parse(text);
+      const uid = String(message.uid).replace(/[^a-zA-Z0-9]/g, '');
+
+      switch (message.type) {
+        case 'video-state':
+          updateRemoteParticipant(uid, {
+            videoEnabled: message.enabled
+          });
+          break;
+
+        case 'audio-state':
+          updateRemoteParticipant(uid, {
+            audioEnabled: message.enabled
+          });
+          break;
+
+        case 'screen-share-state':
+          if (message.isSharing) {
+            setScreenShare(String(message.uid), false);
+          } else {
+            setScreenShare(null, false);
+          }
+          break;
+
+        case 'user-info':
+          if (uid === String(meetingConfig.uid)) return;
+
+          updateRemoteParticipant(uid, {
+            name: message.name,
+            rtcUid: uid
+          });
+          break;
+        case 'hand-state':
+          setRaisedHands((prev: any) => ({
+            ...prev,
+            [uid]: message.isRaised
+          }));
+          break;
+        case 'chat':
+          setChatMessages(prev => [...prev, {
+            id: `${message.timestamp}-${uid}`,
+            sender: {
+              uid: uid,
+              name: message.senderName
+            },
+            content: message.content,
+            timestamp: message.timestamp,
+            type: message.messageType,
+            isLocal: String(uid) === String(meetingConfig.uid)
+          }]);
+          break;
+      }
+    } catch (error) {
+      console.error("Error processing RTM message:", error);
+    }
+    //removed setspeakingparticipants from the dependecy array
+  }, [meetingConfig.uid, updateRemoteParticipant, setScreenShare]);
+
+  useEffect(() => {
+    if (!rtmChannel) return;
+
+    rtmChannel.on("ChannelMessage", handleRTMMessage);
+    return () => {
+      rtmChannel.off("ChannelMessage", handleRTMMessage);
+    };
+  }, [handleRTMMessage]);
+
+  const extension = new VirtualBackgroundExtension();
+  AgoraRTC.registerExtensions([extension]);
+
+
   const setupVolumeIndicator = useCallback(() => {
     if (!rtcClient) return;
 
@@ -316,16 +309,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       }
     });
 
-  }, [rtcClient, meetingConfig.uid]);
-
-
-  useRTMMessageHandler(
-    rtmChannel,
-    meetingConfig,
-    username,
-    updateRemoteParticipant,
-    setScreenShare
-  );
+  }, [meetingConfig.uid]);
 
   const handleMediaTrackUpdate = useCallback(async (uid: string, mediaType: 'audio' | 'video', track: any, enabled: boolean) => {
     updateRemoteParticipant(uid, {
@@ -1077,7 +1061,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       // Set up member join/leave handlers
       channel.on("MemberJoined", onParticipantJoined);
       channel.on("MemberLeft", onMemberDisconnected);
-
+      channel.on("ChannelMessage", handleRTMMessage);
       window.addEventListener("beforeunload", disconnectFromMessaging);
 
       await fetchActiveMeetingParticipants();
