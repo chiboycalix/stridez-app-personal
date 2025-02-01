@@ -805,7 +805,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         //   }
         // }
         // ensureRemoteAudioPlaying();
-
         if (rtmChannel) {
           await sendRateLimitedMessage({
             text: JSON.stringify({
