@@ -908,19 +908,18 @@ export function VideoConferencingProvider({
       try {
         const newState = !isMicrophoneEnabled;
         await localUserTrack.audioTrack.setEnabled(newState);
-        if (hasJoinedMeeting && rtcClient) {
-          if (newState) {
-            const isPublished = rtcClient.localTracks.includes(
-              localUserTrack.audioTrack
-            );
-            if (!isPublished) {
-              await rtcClient.publish([localUserTrack.audioTrack]);
-            }
-          } else {
-            await rtcClient.unpublish([localUserTrack.audioTrack]);
-          }
-        }
-        ensureRemoteAudioPlaying();
+        // if (hasJoinedMeeting && rtcClient) {
+        //   if (newState) {
+        //     const isPublished = rtcClient.localTracks.includes(
+        //       localUserTrack.audioTrack
+        //     );
+        //     if (!isPublished) {
+        //       await rtcClient.publish([localUserTrack.audioTrack]);
+        //     }
+        //   } else {
+        //     await rtcClient.unpublish([localUserTrack.audioTrack]);
+        //   }
+        // }
 
         if (rtmChannel) {
           await sendRateLimitedMessage({
@@ -942,21 +941,24 @@ export function VideoConferencingProvider({
   const toggleCamera = async () => {
     try {
       if (localUserTrack?.videoTrack) {
+        if (!rtcClient) {
+          return
+        }
         const newState = !isCameraEnabled;
         await localUserTrack.videoTrack.setEnabled(newState);
-        if (hasJoinedMeeting && rtcClient) {
-          if (newState) {
-            const isPublished = rtcClient.localTracks.includes(
-              localUserTrack.videoTrack
-            );
-            if (!isPublished) {
-              await rtcClient.publish([localUserTrack.videoTrack]);
-            }
-          } else {
-            await rtcClient.unpublish([localUserTrack.videoTrack]);
-          }
-        }
+        // if (hasJoinedMeeting && rtcClient) {
+        //   if (newState) {
+        //     const isPublished = rtcClient.localTracks.includes(
+        //       localUserTrack.videoTrack
+        //     );
+        //     if (!isPublished) {
+        //       await localUserTrack.videoTrack.setEnabled(false);
+        //     }
+        //   } else {
+        //     await localUserTrack.videoTrack.setEnabled(true);
 
+        //   }
+        // }
         if (rtmChannel) {
           await sendRateLimitedMessage({
             text: JSON.stringify({
