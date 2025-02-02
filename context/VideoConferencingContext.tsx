@@ -7,6 +7,7 @@ import { agoraGetAppData } from '@/lib';
 import { IRemoteAudioTrack, IRemoteVideoTrack } from "agora-rtc-sdk-ng";
 import { rateLimiter } from "@/utils/MessageRateLimiter";
 import VirtualBackgroundExtension from "agora-extension-virtual-background";
+import { useAuth } from "./AuthContext";
 
 interface RemoteParticipant {
   name: string;
@@ -114,8 +115,8 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   } | null>(null);
   const [raisedHands, setRaisedHands] = useState<Record<string, boolean>>({});
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
-  console.log({ isMobile })
+  const { currentUser } = useAuth()
+
   useEffect(() => {
     AgoraRTC.setLogLevel(4);
     AgoraRTC.disableLogUpload();
@@ -135,89 +136,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     screenVideoTrack: ILocalVideoTrack | null;
     screenAudioTrack: ILocalAudioTrack | null;
   } | null>(null);
-
-  const useRTMMessageHandler = (
-    rtmChannel: RtmChannel | null,
-    meetingConfig: Options,
-    username: string,
-    updateRemoteParticipant: (uid: string, updates: any) => void,
-    setScreenShare: (uid: string | null, isLocal: boolean) => void,
-  ) => {
-
-    const handleRTMMessage = useCallback(async ({ text, peerId }: any) => {
-      if (!text) return;
-
-      try {
-        const message = JSON.parse(text);
-        const uid = String(message.uid).replace(/[^a-zA-Z0-9]/g, '');
-
-        switch (message.type) {
-          case 'video-state':
-            updateRemoteParticipant(uid, {
-              videoEnabled: message.enabled
-            });
-            break;
-
-          case 'audio-state':
-            updateRemoteParticipant(uid, {
-              audioEnabled: message.enabled
-            });
-            break;
-
-          case 'screen-share-state':
-            if (message.isSharing) {
-              setScreenShare(String(message.uid), false);
-            } else {
-              setScreenShare(null, false);
-            }
-            break;
-
-          case 'user-info':
-            if (uid === String(meetingConfig.uid)) return;
-
-            updateRemoteParticipant(uid, {
-              name: message.name,
-              rtcUid: uid
-            });
-            break;
-          case 'hand-state':
-            setRaisedHands((prev: any) => ({
-              ...prev,
-              [uid]: message.isRaised
-            }));
-            break;
-          case 'chat':
-            setChatMessages(prev => [...prev, {
-              id: `${message.timestamp}-${uid}`,
-              sender: {
-                uid: uid,
-                name: message.senderName
-              },
-              content: message.content,
-              timestamp: message.timestamp,
-              type: message.messageType,
-              isLocal: String(uid) === String(meetingConfig.uid)
-            }]);
-            break;
-        }
-      } catch (error) {
-        console.error("Error processing RTM message:", error);
-      }
-      //removed setspeakingparticipants from the dependecy array
-    }, [meetingConfig.uid, updateRemoteParticipant, setScreenShare]);
-
-    useEffect(() => {
-      if (!rtmChannel) return;
-
-      rtmChannel.on("ChannelMessage", handleRTMMessage);
-      return () => {
-        rtmChannel.off("ChannelMessage", handleRTMMessage);
-      };
-    }, [rtmChannel, handleRTMMessage]);
-  };
-
-  const extension = new VirtualBackgroundExtension();
-  AgoraRTC.registerExtensions([extension]);
 
   const [meetingConfig, setMeetingConfig] = useState<Options>({
     channel: "",
@@ -277,6 +195,82 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     });
   }, []);
 
+  const handleRTMMessage = useCallback(async ({ text, peerId }: any) => {
+    console.log({ text })
+    if (!text) return;
+
+    try {
+      const message = JSON.parse(text);
+      const uid = String(message.uid).replace(/[^a-zA-Z0-9]/g, '');
+
+      switch (message.type) {
+        case 'video-state':
+          updateRemoteParticipant(uid, {
+            videoEnabled: message.enabled
+          });
+          break;
+
+        case 'audio-state':
+          updateRemoteParticipant(uid, {
+            audioEnabled: message.enabled
+          });
+          break;
+
+        case 'screen-share-state':
+          if (message.isSharing) {
+            setScreenShare(String(message.uid), false);
+          } else {
+            setScreenShare(null, false);
+          }
+          break;
+
+        case 'user-info':
+          if (uid === String(meetingConfig.uid)) return;
+
+          updateRemoteParticipant(uid, {
+            name: message.name,
+            rtcUid: uid
+          });
+          break;
+        case 'hand-state':
+          setRaisedHands((prev: any) => ({
+            ...prev,
+            [uid]: message.isRaised
+          }));
+          break;
+        case 'chat':
+          setChatMessages(prev => [...prev, {
+            id: `${message.timestamp}-${uid}`,
+            sender: {
+              uid: uid,
+              name: message.senderName
+            },
+            content: message.content,
+            timestamp: message.timestamp,
+            type: message.messageType,
+            isLocal: String(uid) === String(meetingConfig.uid)
+          }]);
+          break;
+      }
+    } catch (error) {
+      console.error("Error processing RTM message:", error);
+    }
+    //removed setspeakingparticipants from the dependecy array
+  }, [meetingConfig.uid, updateRemoteParticipant, setScreenShare]);
+
+  useEffect(() => {
+    if (!rtmChannel) return;
+
+    rtmChannel.on("ChannelMessage", handleRTMMessage);
+    return () => {
+      rtmChannel.off("ChannelMessage", handleRTMMessage);
+    };
+  }, [handleRTMMessage]);
+
+  const extension = new VirtualBackgroundExtension();
+  AgoraRTC.registerExtensions([extension]);
+
+
   const setupVolumeIndicator = useCallback(() => {
     if (!rtcClient) return;
 
@@ -315,16 +309,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       }
     });
 
-  }, [rtcClient, meetingConfig.uid]);
-
-
-  useRTMMessageHandler(
-    rtmChannel,
-    meetingConfig,
-    username,
-    updateRemoteParticipant,
-    setScreenShare
-  );
+  }, [meetingConfig.uid]);
 
   const handleMediaTrackUpdate = useCallback(async (uid: string, mediaType: 'audio' | 'video', track: any, enabled: boolean) => {
     updateRemoteParticipant(uid, {
@@ -403,8 +388,9 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
       fetchAgoraData();
       fetchMeetingRoomData();
+      setUsername(currentUser?.username)
     }
-  }, [channelName, username, fetchMeetingRoomData]);
+  }, [channelName, username, fetchMeetingRoomData, currentUser?.username]);
 
   useEffect(() => {
     handleMeetingHostAndCohost();
@@ -787,82 +773,63 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     }
   }, [localUserTrack?.audioTrack, localUserTrack?.screenTrack, localUserTrack?.videoTrack]);
 
-  const toggleMicrophone = async () => {
+  const toggleMicrophone = useCallback(async () => {
     if (localUserTrack && localUserTrack.audioTrack) {
       try {
         const newState = !isMicrophoneEnabled;
         await localUserTrack.audioTrack.setEnabled(newState);
-        if (hasJoinedMeeting && rtcClient) {
-          if (newState) {
-            const isPublished = rtcClient.localTracks.includes(localUserTrack.audioTrack);
-            if (!isPublished) {
-              await rtcClient.publish([localUserTrack.audioTrack]);
-            }
-          } else {
-            await rtcClient.unpublish([localUserTrack.audioTrack]);
-          }
-        }
-        ensureRemoteAudioPlaying();
 
-        if (rtmChannel) {
-          await sendRateLimitedMessage({
-            text: JSON.stringify({
-              type: 'audio-state',
-              uid: meetingConfig.uid,
-              enabled: newState
-            })
-          });
-        }
+        // if (rtmChannel) {
+        //   await sendRateLimitedMessage({
+        //     text: JSON.stringify({
+        //       type: 'audio-state',
+        //       uid: meetingConfig.uid,
+        //       enabled: newState
+        //     })
+        //   });
+        // }
 
         setIsMicrophoneEnabled(newState);
       } catch (error) {
         console.error("Error toggling audio:", error);
       }
     }
-  };
+  }, [isMicrophoneEnabled, localUserTrack]);
 
-  const toggleCamera = async () => {
+  const toggleCamera = useCallback(async () => {
     try {
       if (localUserTrack?.videoTrack) {
         const newState = !isCameraEnabled;
         await localUserTrack.videoTrack.setEnabled(newState);
-        if (hasJoinedMeeting && rtcClient) {
-          if (newState) {
-            const isPublished = rtcClient.localTracks.includes(localUserTrack.videoTrack);
-            if (!isPublished) {
-              await rtcClient.publish([localUserTrack.videoTrack]);
-            }
-          } else {
-            await rtcClient.unpublish([localUserTrack.videoTrack]);
-          }
-        }
+        // if (hasJoinedMeeting && rtcClient) {
+        //   if (newState) {
+        //     const isPublished = rtcClient.localTracks.includes(localUserTrack.videoTrack);
+        //     if (!isPublished) {
+        //       await rtcClient.publish([localUserTrack.videoTrack]);
+        //     }
+        //   } else {
+        //     await rtcClient.unpublish([localUserTrack.videoTrack]);
+        //   }
+        // }
 
-        if (rtmChannel) {
-          await sendRateLimitedMessage({
-            text: JSON.stringify({
-              type: 'video-state',
-              uid: meetingConfig.uid,
-              enabled: newState,
-              hasTrack: true,
-              timestamp: Date.now()
-            })
-          });
-        }
+        // if (rtmChannel) {
+        //   await sendRateLimitedMessage({
+        //     text: JSON.stringify({
+        //       type: 'video-state',
+        //       uid: meetingConfig.uid,
+        //       enabled: newState,
+        //       hasTrack: true,
+        //       timestamp: Date.now()
+        //     })
+        //   });
+        // }
 
         setIsCameraEnabled(newState);
       }
     } catch (error) {
       console.log("Error toggling video:", error);
     }
-  };
-
-  useEffect(() => {
-    if (hasJoinedMeeting) {
-      const audioCheckInterval = setInterval(ensureRemoteAudioPlaying, 5000);
-
-      return () => clearInterval(audioCheckInterval);
-    }
-  }, [hasJoinedMeeting]);
+  }, [isCameraEnabled, localUserTrack?.videoTrack]);
 
   useEffect(() => {
     rateLimiter.startResetTimer();
@@ -1076,7 +1043,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       // Set up member join/leave handlers
       channel.on("MemberJoined", onParticipantJoined);
       channel.on("MemberLeft", onMemberDisconnected);
-
+      channel.on("ChannelMessage", handleRTMMessage);
       window.addEventListener("beforeunload", disconnectFromMessaging);
 
       await fetchActiveMeetingParticipants();
@@ -1093,40 +1060,53 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     onMemberDisconnected,
   ]);
 
-  const onMediaStreamPublished = useCallback(async (user: any, mediaType: "audio" | "video") => {
-    try {
-      await rtcClient.subscribe(user, mediaType);
-      const uid = String(user.uid);
+  const onMediaStreamPublished = useCallback(
+    async (user: any, mediaType: "audio" | "video") => {
+      try {
+        await rtcClient.subscribe(user, mediaType);
+        const uid = String(user.uid);
 
-      if (mediaType === "video" && !user.videoTrack?.isScreenTrack) {
-        if (isMobile) {
-          await rtcClient.setRemoteVideoStreamType(user.uid, 1); // 1 = Low quality
+        if (mediaType === "video") {
+          const videoTrack = user.videoTrack;
+          setRemoteParticipants((prevUsers) => {
+            const existingUser = prevUsers[uid] || {
+              name: "",
+              rtcUid: uid,
+              audioEnabled: false,
+              videoEnabled: true,
+            };
+
+
+            return {
+              ...prevUsers,
+              [uid]: {
+                ...existingUser,
+                videoTrack,
+                videoEnabled: true,
+                hasTrack: true,
+              },
+            };
+          });
         }
-        const remoteVideoTrack = user.videoTrack;
-        // Play the remote video track
-        remoteVideoTrack.play('remote-video-container');
 
-        await handleMediaTrackUpdate(uid, 'video', user.videoTrack, true);
-      }
-
-      if (mediaType === "audio") {
-        await handleMediaTrackUpdate(uid, 'audio', user.audioTrack, true);
-      }
-    } catch (error) {
-      console.error("[STREAM-ERROR] Error in onMediaStreamPublished:", error);
-    }
-  }, [handleMediaTrackUpdate]);
-
-  const ensureRemoteAudioPlaying = () => {
-    rtcClient?.remoteUsers.forEach(user => {
-      if (user.audioTrack) {
-        user.audioTrack.setVolume(100);
-        if (!user.audioTrack.isPlaying) {
-          user.audioTrack.play()
+        if (mediaType === "audio") {
+          const audioTrack = user.audioTrack;
+          setRemoteParticipants((prevUsers) => ({
+            ...prevUsers,
+            [uid]: {
+              ...prevUsers[uid],
+              audioTrack,
+              audioEnabled: true,
+            },
+          }));
+          audioTrack.play();
         }
+      } catch (error) {
+        console.error("[STREAM-ERROR] Error in onMediaStreamPublished:", error);
       }
-    });
-  };
+    },
+    [handleMediaTrackUpdate]
+  );
 
   const onMediaStreamUnpublished = useCallback(async (user: any, mediaType: "audio" | "video") => {
     const uid = String(user.uid);
@@ -1205,19 +1185,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     remoteUsersRef.current = remoteParticipants;
   }, [remoteParticipants]);
 
-  const subscribeToExistingParticipants = async () => {
-    if (!rtcClient) return;
-    const remoteUsers = rtcClient.remoteUsers;
-
-    for (const user of remoteUsers) {
-      if (user.hasVideo) {
-        await subscribeToParticipantMedia(user, 'video');
-      }
-      if (user.hasAudio) {
-        await subscribeToParticipantMedia(user, 'audio');
-      }
-    }
-  };
 
   const connectToMeetingRoom = async () => {
     try {
@@ -1253,18 +1220,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       );
 
       await initializeRealtimeMessaging(username!);
-
-      const remoteUsers = rtcClient.remoteUsers;
-
-      for (const user of remoteUsers) {
-        if (user.hasVideo) {
-          await rtcClient.subscribe(user, "video");
-        }
-        if (user.hasAudio) {
-          await rtcClient.subscribe(user, "audio");
-        }
-      }
-
     } catch (error) {
       console.error("Error in connectToMeetingRoom:", error);
       throw error;
@@ -1275,7 +1230,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     try {
       if (!meetingConfig) return;
       await connectToMeetingRoom();
-      await subscribeToExistingParticipants();
 
       if (rtmChannel) {
         await rtmChannel.sendMessage({
@@ -1307,75 +1261,12 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         await broadcastCurrentMediaStates();
       }
 
-      ensureRemoteAudioPlaying();
-
       AgoraRTC.setLogLevel(1);
       setHasJoinedMeeting(true);
       setMeetingStage("hasJoinedMeeting");
       setMeetingConfig(meetingConfig);
     } catch (error) {
       console.log("Error joining meeting:", error);
-    }
-  };
-
-  const subscribeToParticipantMedia = async (user: any, mediaType: "audio" | "video") => {
-    try {
-      await rtcClient.subscribe(user, mediaType);
-      const uid = String(user.uid);
-
-      if (mediaType === "video") {
-        const videoTrack = user.videoTrack;
-
-        setRemoteParticipants((prevUsers) => {
-          const existingUser = prevUsers[uid] || {
-            name: "",
-            rtcUid: uid,
-            audioEnabled: false,
-            videoEnabled: true
-          };
-
-          return {
-            ...prevUsers,
-            [uid]: {
-              ...existingUser,
-              videoTrack,
-              videoEnabled: true,
-              hasTrack: true
-            },
-          };
-        });
-
-        if (rtmChannel) {
-          await rtmChannel.sendMessage({
-            text: JSON.stringify({
-              type: 'request-video-state',
-              uid: meetingConfig.uid,
-              targetUid: uid
-            })
-          });
-          await rtmChannel.sendMessage({
-            text: JSON.stringify({
-              type: 'request-states',
-              uid: meetingConfig.uid
-            })
-          });
-        }
-      }
-
-      if (mediaType === "audio") {
-        const audioTrack = user.audioTrack;
-        setRemoteParticipants((prevUsers) => ({
-          ...prevUsers,
-          [uid]: {
-            ...prevUsers[uid],
-            audioTrack,
-            audioEnabled: true
-          },
-        }));
-        audioTrack.play();
-      }
-    } catch (error) {
-      console.log(`Error subscribing to ${mediaType}:`, error);
     }
   };
 

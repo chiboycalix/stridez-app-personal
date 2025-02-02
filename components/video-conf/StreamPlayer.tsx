@@ -22,63 +22,54 @@ export const StreamPlayer: React.FC<StreamPlayerProps> = ({
   videoTrack,
   uid = "",
   options = {},
-  isScreenShare = false
+  isScreenShare = false,
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const { isCameraEnabled, meetingConfig } = useVideoConferencing();
   const isLocalUser = uid === meetingConfig?.uid;
 
-  // Clean up previous video track
   useEffect(() => {
     return () => {
       if (videoTrack) {
         try {
           videoTrack.stop();
         } catch (error) {
-          console.error('[STREAM-PLAYER] Error cleaning up video track:', error);
+          console.error("[STREAM-PLAYER] Error cleaning up video track:", error);
         }
       }
     };
   }, [videoTrack, uid]);
 
-  // Initialize or update video track
   useEffect(() => {
-    const initVideo = async () => {
-      if (!videoTrack || !containerRef.current) return;
+    if (!videoTrack || !videoRef.current) return;
 
-      const shouldPlay = isScreenShare || !isLocalUser || (isLocalUser && isCameraEnabled);
-      if (!shouldPlay) return;
+    videoTrack.play(videoRef.current);
+  }, [videoTrack]); // ✅ Runs only when videoTrack changes
 
-      try {
-        // Clear existing content
-        while (containerRef.current.firstChild) {
-          containerRef.current.removeChild(containerRef.current.firstChild);
-        }
-
-        // Play new track
-        await videoTrack.play(containerRef.current, {
-          fit: isScreenShare ? 'contain' : 'cover',
-          ...options
-        });
-
-      } catch (error) {
-        console.error('[STREAM-PLAYER] Error playing video:', error);
-      }
-    };
-
-    initVideo();
-  }, [videoTrack, isLocalUser, isCameraEnabled, isScreenShare, options, uid]);
-
-  const shouldShowVideo = isScreenShare ?
-    !!videoTrack :
-    videoTrack && (!isLocalUser || (isLocalUser && isCameraEnabled));
+  const shouldShowVideo = isScreenShare
+    ? !!videoTrack
+    : videoTrack && (!isLocalUser || (isLocalUser && isCameraEnabled));
 
   return (
     <div className="relative w-full h-full">
+
+      {/* <video
+        ref={videoRef}
+        playsInline
+        autoPlay
+        muted
+        className={`w-full h-full transition-opacity duration-300 ${shouldShowVideo ? "opacity-100" : "opacity-0"
+          }`}
+      />
+      {!shouldShowVideo && (
+        <VideoMutedDisplay participant={{ uid, name: "", isLocal: isLocalUser }} />
+      )} */}
       {shouldShowVideo ? (
-        <div
-          ref={containerRef}
-          className={`w-full h-full ${isScreenShare ? 'bg-black' : ''}`}
+        <video
+          playsInline autoPlay muted
+          ref={videoRef}
+          className={`w-full h-full transition-opacity duration-300 ${isScreenShare ? 'bg-black' : ''} ${shouldShowVideo ? "opacity-100" : "opacity-0"
+            }`}
         />
       ) : (
         <VideoMutedDisplay participant={{ uid, name: '', isLocal: isLocalUser }} />
