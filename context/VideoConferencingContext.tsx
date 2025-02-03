@@ -8,6 +8,7 @@ import { IRemoteAudioTrack, IRemoteVideoTrack } from "agora-rtc-sdk-ng";
 import { rateLimiter } from "@/utils/MessageRateLimiter";
 import VirtualBackgroundExtension from "agora-extension-virtual-background";
 import { useAuth } from "./AuthContext";
+import { useRouter } from "next/navigation";
 
 interface RemoteParticipant {
   name: string;
@@ -116,6 +117,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   const [raisedHands, setRaisedHands] = useState<Record<string, boolean>>({});
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const { currentUser } = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
     AgoraRTC.setLogLevel(4);
@@ -452,7 +454,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
           await rtmChannel.sendMessage({
             text: JSON.stringify({
               type: 'screen-share-state',
-              uid: meetingConfig.uid,
+              uid: rtcScreenShareOptions.uid,
               isSharing: true
             })
           });
@@ -483,12 +485,12 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       await rtmChannel.sendMessage({
         text: JSON.stringify({
           type: 'screen-share-state',
-          uid: meetingConfig.uid,
+          uid: rtcScreenShareOptions.uid,
           isSharing: false
         })
       });
     }
-  }, [meetingConfig.uid, screenTrack?.screenAudioTrack, screenTrack?.screenVideoTrack]);
+  }, [rtcScreenShareOptions.uid, screenTrack?.screenAudioTrack, screenTrack?.screenVideoTrack]);
 
   const handleEndScreenShare = useCallback(async (action: string, uid: number) => {
     await handleScreenTrackEnd();
@@ -571,17 +573,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       }
 
       if (!rtcScreenShareClient) {
-        return;
-      }
-
-      const subscribedUsers = rtcScreenShareClient.remoteUsers;
-      const isAlreadySubscribed = subscribedUsers.some(
-        (subscribedUser) => subscribedUser.uid === user.uid &&
-          ((mediaType === 'video' && subscribedUser.hasVideo) ||
-            (mediaType === 'audio' && subscribedUser.hasAudio))
-      );
-
-      if (isAlreadySubscribed) {
         return;
       }
 
@@ -873,15 +864,18 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       const attributes = await rtmClient.getUserAttributesByKeys(memberId, [
         "name",
         "userRtcUid",
+        "userRtcScreenUid",
       ]);
 
       const participantData = {
         name: attributes.name || "Anonymous",
         rtcUid: attributes.userRtcUid,
+        rtcScreenUid: attributes.userRtcScreenUid,
         audioEnabled: true,
         videoEnabled: true,
       };
 
+      console.log("memberId....", memberId)
       setRemoteParticipants(prevParticipants => ({
         ...prevParticipants,
         [memberId]: participantData,
@@ -1212,11 +1206,17 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         rtcClient.setClientRole(meetingConfig.role);
       }
 
+      console.log("meetingConfig..", meetingConfig)
+      if (!meetingConfig || meetingConfig.uid === "" || meetingConfig.uid == null) {
+        alert("Meeting config not populated")
+        router.push(`/meeting/${channelName}`)
+        return
+      }
       meetingConfig.uid = await rtcClient.join(
         meetingConfig.appid || "",
         meetingConfig.channel || "",
         meetingConfig.rtcToken || null,
-        meetingConfig.uid || null
+        String(meetingConfig.uid) || null
       );
 
       await initializeRealtimeMessaging(username!);
@@ -1229,6 +1229,12 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   const joinMeetingRoom = async () => {
     try {
       if (!meetingConfig) return;
+      console.log("meetingConfig..", meetingConfig)
+      if (!meetingConfig || meetingConfig.uid === "" || meetingConfig.uid == null) {
+        alert("Meeting config not populated")
+        router.push(`/meeting/${channelName}`)
+        return
+      }
       await connectToMeetingRoom();
 
       if (rtmChannel) {
@@ -1355,8 +1361,8 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
   const leaveCall = useCallback(async () => {
     try {
-      if (isSharingScreen === String(meetingConfig.uid)) {
-        await handleEndScreenShare('end-screen-share', meetingConfig.uid as number);
+      if (isSharingScreen === String(rtcScreenShareOptions.uid)) {
+        await handleEndScreenShare('end-screen-share', rtcScreenShareOptions.uid as number);
       }
 
       await releaseMediaResources();
