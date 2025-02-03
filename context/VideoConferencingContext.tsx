@@ -360,7 +360,10 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
     if (channelName && username) {
       const fetchAgoraData = async () => {
         try {
+          console.log("Error before meeting room data:");
           const rtcData = await agoraGetAppData(channelName);
+          console.log("Error after meeting room data:");
+
           const { client } = rtcData;
 
           setMeetingConfig((prev) => ({
@@ -390,7 +393,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
       fetchAgoraData();
       fetchMeetingRoomData();
-      setUsername(currentUser?.username)
+      setUsername(currentUser?.username || "Anonymous")
     }
   }, [channelName, username, fetchMeetingRoomData, currentUser?.username]);
 
