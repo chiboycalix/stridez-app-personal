@@ -43,12 +43,13 @@ interface VideoConferencingContextContextType {
   toggleCamera: () => void;
   localUserTrack: ILocalTrack | undefined
   meetingConfig: Options;
+  rtcScreenShareOptions: Options;
   videoRef: any;
   initializeLocalMediaTracks: () => void;
   setLocalUserTrack: any
   releaseMediaResources: () => void
   publishLocalMediaTracks: () => void;
-  joinMeetingRoom: (meegtingId: string) => void;
+  joinMeetingRoom: (meegtingId: string) => Promise<void>;
   setMeetingStage: (meetingStage: string) => void;
   setChannelName: (meetingStage: string) => void;
   channelName: string;
@@ -357,7 +358,8 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   }, [channelName, handleMeetingHostAndCohost]);
 
   useEffect(() => {
-    if (channelName && username) {
+    console.log("Error before meeting room data:", channelName, username);
+    if (channelName) {
       const fetchAgoraData = async () => {
         try {
           console.log("Error before meeting room data:");
@@ -393,7 +395,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
       fetchAgoraData();
       fetchMeetingRoomData();
-      setUsername(currentUser?.username || "Anonymous")
+      setUsername(currentUser?.username)
     }
   }, [channelName, username, fetchMeetingRoomData, currentUser?.username]);
 
@@ -1012,7 +1014,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       }
 
       rtmClient = AgoraRTM.createInstance(meetingConfig.appid);
-      const sanitizedUid = String(meetingConfig.uid).replace(/[^a-zA-Z0-9]/g, '');
+      const sanitizedUid = String(meetingConfig.uid)
 
       await rtmClient.login({
         uid: sanitizedUid,
@@ -1209,7 +1211,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         rtcClient.setClientRole(meetingConfig.role);
       }
 
-      console.log("meetingConfig..", meetingConfig)
       if (!meetingConfig || meetingConfig.uid === "" || meetingConfig.uid == null) {
         alert("Meeting config not populated")
         router.push(`/meeting/${channelName}`)
@@ -1232,12 +1233,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   const joinMeetingRoom = async () => {
     try {
       if (!meetingConfig) return;
-      console.log("meetingConfig..", meetingConfig)
-      if (!meetingConfig || meetingConfig.uid === "" || meetingConfig.uid == null) {
-        alert("Meeting config not populated")
-        router.push(`/meeting/${channelName}`)
-        return
-      }
       await connectToMeetingRoom();
 
       if (rtmChannel) {
@@ -1528,6 +1523,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         toggleRaiseHand,
         chatMessages,
         sendChatMessage,
+        rtcScreenShareOptions,
       }}>
       {children}
     </VideoConferencingContext.Provider>

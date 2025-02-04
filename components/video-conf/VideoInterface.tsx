@@ -40,7 +40,7 @@ export default function VideoInterface({
     joinMeetingRoom
   } = useVideoConferencing();
 
-  const handleGoLive = async () => {
+  const handleGoLive = async() => {
     try {
       await joinMeetingRoom(channelName)
       setMeetingStage("hasJoinedMeeting")
