@@ -22,7 +22,7 @@ export default function VideoInterface({
   channelName: string;
   username: string
 }) {
-  const { getCurrentUser } = useAuth();
+  const { currentUser } = useAuth();
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [handleSelectMicrophone, setHandleSelectMicrophone] = useState(false);
   const {
@@ -40,7 +40,7 @@ export default function VideoInterface({
     joinMeetingRoom
   } = useVideoConferencing();
 
-  const handleGoLive = async () => {
+  const handleGoLive = async() => {
     try {
       await joinMeetingRoom(channelName)
       setMeetingStage("hasJoinedMeeting")
@@ -52,7 +52,7 @@ export default function VideoInterface({
 
   useEffect(() => {
     setChannelName(channelName)
-    setUsername(username)
+    setUsername(currentUser.usernam)
   }, [channelName, setChannelName, username, setUsername])
 
   return (

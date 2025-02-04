@@ -8,6 +8,7 @@ import { IRemoteAudioTrack, IRemoteVideoTrack } from "agora-rtc-sdk-ng";
 import { rateLimiter } from "@/utils/MessageRateLimiter";
 import VirtualBackgroundExtension from "agora-extension-virtual-background";
 import { useAuth } from "./AuthContext";
+import { useRouter } from "next/navigation";
 
 interface RemoteParticipant {
   name: string;
@@ -42,12 +43,13 @@ interface VideoConferencingContextContextType {
   toggleCamera: () => void;
   localUserTrack: ILocalTrack | undefined
   meetingConfig: Options;
+  rtcScreenShareOptions: Options;
   videoRef: any;
   initializeLocalMediaTracks: () => void;
   setLocalUserTrack: any
   releaseMediaResources: () => void
   publishLocalMediaTracks: () => void;
-  joinMeetingRoom: (meegtingId: string) => void;
+  joinMeetingRoom: (meegtingId: string) => Promise<void>;
   setMeetingStage: (meetingStage: string) => void;
   setChannelName: (meetingStage: string) => void;
   channelName: string;
@@ -116,6 +118,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   const [raisedHands, setRaisedHands] = useState<Record<string, boolean>>({});
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const { currentUser } = useAuth()
+  const router = useRouter()
 
   useEffect(() => {
     AgoraRTC.setLogLevel(4);
@@ -355,10 +358,14 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
   }, [channelName, handleMeetingHostAndCohost]);
 
   useEffect(() => {
-    if (channelName && username) {
+    console.log("Error before meeting room data:", channelName, username);
+    if (channelName) {
       const fetchAgoraData = async () => {
         try {
+          console.log("Error before meeting room data:");
           const rtcData = await agoraGetAppData(channelName);
+          console.log("Error after meeting room data:");
+
           const { client } = rtcData;
 
           setMeetingConfig((prev) => ({
@@ -452,7 +459,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
           await rtmChannel.sendMessage({
             text: JSON.stringify({
               type: 'screen-share-state',
-              uid: meetingConfig.uid,
+              uid: rtcScreenShareOptions.uid,
               isSharing: true
             })
           });
@@ -483,12 +490,12 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       await rtmChannel.sendMessage({
         text: JSON.stringify({
           type: 'screen-share-state',
-          uid: meetingConfig.uid,
+          uid: rtcScreenShareOptions.uid,
           isSharing: false
         })
       });
     }
-  }, [meetingConfig.uid, screenTrack?.screenAudioTrack, screenTrack?.screenVideoTrack]);
+  }, [rtcScreenShareOptions.uid, screenTrack?.screenAudioTrack, screenTrack?.screenVideoTrack]);
 
   const handleEndScreenShare = useCallback(async (action: string, uid: number) => {
     await handleScreenTrackEnd();
@@ -571,17 +578,6 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       }
 
       if (!rtcScreenShareClient) {
-        return;
-      }
-
-      const subscribedUsers = rtcScreenShareClient.remoteUsers;
-      const isAlreadySubscribed = subscribedUsers.some(
-        (subscribedUser) => subscribedUser.uid === user.uid &&
-          ((mediaType === 'video' && subscribedUser.hasVideo) ||
-            (mediaType === 'audio' && subscribedUser.hasAudio))
-      );
-
-      if (isAlreadySubscribed) {
         return;
       }
 
@@ -873,15 +869,18 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       const attributes = await rtmClient.getUserAttributesByKeys(memberId, [
         "name",
         "userRtcUid",
+        "userRtcScreenUid",
       ]);
 
       const participantData = {
         name: attributes.name || "Anonymous",
         rtcUid: attributes.userRtcUid,
+        rtcScreenUid: attributes.userRtcScreenUid,
         audioEnabled: true,
         videoEnabled: true,
       };
 
+      console.log("memberId....", memberId)
       setRemoteParticipants(prevParticipants => ({
         ...prevParticipants,
         [memberId]: participantData,
@@ -1015,7 +1014,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
       }
 
       rtmClient = AgoraRTM.createInstance(meetingConfig.appid);
-      const sanitizedUid = String(meetingConfig.uid).replace(/[^a-zA-Z0-9]/g, '');
+      const sanitizedUid = String(meetingConfig.uid)
 
       await rtmClient.login({
         uid: sanitizedUid,
@@ -1212,11 +1211,16 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         rtcClient.setClientRole(meetingConfig.role);
       }
 
+      if (!meetingConfig || meetingConfig.uid === "" || meetingConfig.uid == null) {
+        alert("Meeting config not populated")
+        router.push(`/meeting/${channelName}`)
+        return
+      }
       meetingConfig.uid = await rtcClient.join(
         meetingConfig.appid || "",
         meetingConfig.channel || "",
         meetingConfig.rtcToken || null,
-        meetingConfig.uid || null
+        String(meetingConfig.uid) || null
       );
 
       await initializeRealtimeMessaging(username!);
@@ -1355,8 +1359,8 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
 
   const leaveCall = useCallback(async () => {
     try {
-      if (isSharingScreen === String(meetingConfig.uid)) {
-        await handleEndScreenShare('end-screen-share', meetingConfig.uid as number);
+      if (isSharingScreen === String(rtcScreenShareOptions.uid)) {
+        await handleEndScreenShare('end-screen-share', rtcScreenShareOptions.uid as number);
       }
 
       await releaseMediaResources();
@@ -1519,6 +1523,7 @@ export function VideoConferencingProvider({ children }: { children: ReactNode })
         toggleRaiseHand,
         chatMessages,
         sendChatMessage,
+        rtcScreenShareOptions,
       }}>
       {children}
     </VideoConferencingContext.Provider>
